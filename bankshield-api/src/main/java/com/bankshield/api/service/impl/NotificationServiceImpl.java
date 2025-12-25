@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+
 /**
  * 告警通知服务实现类
  */
@@ -75,9 +78,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendNotificationByLevel(AlertRecord alertRecord) {
         String alertLevel = alertRecord.getAlertLevel();
-        
-        // 获取对应级别的通知配置
-        List<NotificationConfig> configs = notificationConfigMapper.selectEnabledByType(NotifyType.EMAIL.getCode());
+
+        // 获取所有启用的通知配置，不再限制类型
+        List<NotificationConfig> configs = notificationConfigMapper.selectEnabledConfigs();
         
         for (NotificationConfig config : configs) {
             try {
@@ -315,10 +318,36 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 提取Webhook URL
+     * 支持两种格式：
+     * 1. JSON格式：{"url": "https://xxx.com/webhook", "secret": "xxx"}
+     * 2. 直接URL字符串（兼容旧数据）
      */
     private String extractWebhookUrl(String configParams) {
-        // 这里简化处理，实际应该解析JSON配置
-        return configParams != null && configParams.contains("http") ? configParams : null;
+        if (configParams == null || configParams.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            // 尝试解析JSON
+            JSONObject jsonParams = JSON.parseObject(configParams);
+            if (jsonParams != null && jsonParams.containsKey("url")) {
+                String url = jsonParams.getString("url");
+                if (url != null && !url.trim().isEmpty()) {
+                    return url.trim();
+                }
+            }
+        } catch (Exception e) {
+            // 不是JSON格式，作为普通URL处理
+            log.debug("Webhook配置参数不是有效的JSON格式，作为直接URL处理");
+        }
+
+        // 如果是直接URL，检查是否为有效URL格式
+        if (configParams.contains("http://") || configParams.contains("https://")) {
+            return configParams.trim();
+        }
+
+        log.warn("Webhook URL格式无效: {}", configParams);
+        return null;
     }
 
     /**

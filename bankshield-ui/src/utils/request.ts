@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
+import router from '@/router'
 
 // 定义统一响应格式
 interface ResponseData<T = any> {
@@ -56,7 +56,6 @@ service.interceptors.response.use(
           ElMessage.error('登录已过期，请重新登录')
           localStorage.removeItem('token')
           // 跳转到登录页
-          const router = useRouter()
           router.push('/login')
           break
         case 403:

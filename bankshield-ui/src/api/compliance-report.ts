@@ -160,7 +160,10 @@ export const getReportStats = () => {
 
 // 导出报表URL生成
 export const generateReportExportUrl = (taskId: number) => {
-  return `${import.meta.env.VITE_API_BASE_URL}/api/report/download/${taskId}`
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+  // 移除末尾的斜杠，避免 URL 重复拼接
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, '')
+  return `${normalizedBaseUrl}/api/report/download/${taskId}`
 }
 
 // 批量操作
