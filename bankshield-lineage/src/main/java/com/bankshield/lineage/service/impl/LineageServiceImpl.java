@@ -240,7 +240,18 @@ public class LineageServiceImpl extends ServiceImpl<DataLineageNodeMapper, DataL
 
     @Override
     public List<LineageGraph.LineageEdge> getLineagePath(Long sourceNodeId, Long targetNodeId, Integer maxDepth) {
-        return edgeMapper.findImpactPath(sourceNodeId, targetNodeId, maxDepth);
+        List<DataLineageEdge> edges = edgeMapper.findImpactPath(sourceNodeId, targetNodeId, maxDepth);
+        return edges.stream()
+                .map(edge -> {
+                    LineageGraph.LineageEdge vo = new LineageGraph.LineageEdge();
+                    vo.setSource(edge.getSourceNodeId());
+                    vo.setTarget(edge.getTargetNodeId());
+                    vo.setRelationshipType(edge.getRelationshipType());
+                    vo.setTransformation(edge.getTransformation());
+                    vo.setImpactWeight(edge.getImpactWeight());
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

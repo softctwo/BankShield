@@ -83,34 +83,31 @@ public class SmoothKeyRotationServiceImpl implements SmoothKeyRotationService {
             }
             
             // 2. 生成新密钥
-            com.bankshield.encrypt.dto.GenerateKeyRequest keyRequest = new com.bankshield.encrypt.dto.GenerateKeyRequest();
-            keyRequest.setKeyType(oldKey.getKeyType());
-            keyRequest.setKeyLength(oldKey.getKeyLength());
-            keyRequest.setKeyName(oldKey.getKeyName() + "_rotated_" + System.currentTimeMillis());
-            keyRequest.setKeyUsage(oldKey.getKeyUsage());
-            keyRequest.setExpireDays(90);
-            keyRequest.setDescription("通过轮换生成的密钥，原密钥ID: " + oldKeyId);
-            
             // 将String类型转换为枚举类型
             KeyType keyType;
             KeyUsage keyUsage;
             try {
-                keyType = KeyType.fromCode(keyRequest.getKeyType());
-                keyUsage = KeyUsage.fromCode(keyRequest.getKeyUsage());
+                keyType = KeyType.fromCode(oldKey.getKeyType());
+                keyUsage = KeyUsage.fromCode(oldKey.getKeyUsage());
             } catch (IllegalArgumentException e) {
                 log.error("密钥类型或用途转换失败: keyType={}, keyUsage={}", 
-                         keyRequest.getKeyType(), keyRequest.getKeyUsage(), e);
+                         oldKey.getKeyType(), oldKey.getKeyUsage(), e);
                 return Result.error(400, "密钥类型或用途无效: " + e.getMessage());
             }
             
+            // 调用generateKey方法，使用正确的参数列表
+            String newKeyName = oldKey.getKeyName() + "_rotated_" + System.currentTimeMillis();
+            String newKeyDescription = "通过轮换生成的密钥，原密钥ID: " + oldKeyId;
+            Integer rotationCycle = null; // 轮换周期使用默认值
+            
             Result<EncryptionKey> newKeyResult = keyManagementService.generateKey(
-                keyRequest.getKeyName(),
+                newKeyName,
                 keyType,
                 keyUsage,
-                keyRequest.getKeyLength(),
-                keyRequest.getExpireDays(),
-                keyRequest.getRotationCycle(),
-                keyRequest.getDescription(),
+                oldKey.getKeyLength(),
+                Integer.valueOf(90),  // expireDays
+                rotationCycle,
+                newKeyDescription,
                 "SYSTEM"
             );
             if (!newKeyResult.isSuccess()) {
