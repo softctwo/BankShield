@@ -68,6 +68,15 @@ public class KeyStorageServiceImpl implements KeyStorageService {
      */
     private void useFallbackMasterKey() {
         if (masterKey == null || masterKey.trim().isEmpty()) {
+            // 生产环境必须配置主密钥，禁止使用自动生成的密钥
+            String env = System.getenv("SPRING_PROFILES_ACTIVE");
+            if (env != null && env.contains("prod")) {
+                throw new IllegalStateException(
+                    "生产环境必须配置主密钥！请通过 'bankshield.encrypt.master-key' 配置项设置主密钥，"
+                    + "或启用Vault集成（设置 'bankshield.encrypt.vault-enabled=true'）。"
+                    + "禁止在生产环境中使用自动生成的密钥。"
+                );
+            }
             log.warn("未配置主密钥，生成默认主密钥（仅用于开发环境）");
             this.actualMasterKey = SM4Util.generateKey();
             log.warn("默认主密钥已生成，生产环境请务必配置安全的主密钥或使用Vault集成");
@@ -82,11 +91,15 @@ public class KeyStorageServiceImpl implements KeyStorageService {
         if (keyMaterial == null || keyMaterial.trim().isEmpty()) {
             throw new IllegalArgumentException("密钥材料不能为空");
         }
-        
+
         try {
             switch (storageType.toUpperCase()) {
                 case "SM4":
-                    return SM4Util.encryptECB(actualMasterKey, keyMaterial);
+                    // 使用CBC模式，每次加密生成随机IV，确保相同明文产生不同密文
+                    String iv = SM4Util.generateIV();
+                    String encrypted = SM4Util.encryptCBC(actualMasterKey, iv, keyMaterial);
+                    // 将IV与密文用冒号分隔存储，解密时需要先解析IV
+                    return iv + ":" + encrypted;
                 default:
                     throw new IllegalArgumentException("不支持的存储类型: " + storageType);
             }
@@ -95,17 +108,24 @@ public class KeyStorageServiceImpl implements KeyStorageService {
             throw new RuntimeException("加密密钥材料失败", e);
         }
     }
-    
+
     @Override
     public String decryptKeyMaterial(String encryptedKeyMaterial) {
         if (encryptedKeyMaterial == null || encryptedKeyMaterial.trim().isEmpty()) {
             throw new IllegalArgumentException("加密的密钥材料不能为空");
         }
-        
+
         try {
             switch (storageType.toUpperCase()) {
                 case "SM4":
-                    return SM4Util.decryptECB(actualMasterKey, encryptedKeyMaterial);
+                    // 解析IV和密文（格式：IV:CipherText）
+                    String[] parts = encryptedKeyMaterial.split(":", 2);
+                    if (parts.length != 2) {
+                        throw new IllegalArgumentException("加密数据格式错误，缺少IV");
+                    }
+                    String iv = parts[0];
+                    String cipherText = parts[1];
+                    return SM4Util.decryptCBC(actualMasterKey, iv, cipherText);
                 default:
                     throw new IllegalArgumentException("不支持的存储类型: " + storageType);
             }

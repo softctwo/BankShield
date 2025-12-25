@@ -7,14 +7,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import javax.annotation.PostConstruct;
 import java.util.*;
 
 @Component
 @Slf4j
 public class JwtUtil {
-    
-    @Value("${jwt.secret:bankshield_jwt_secret_key_2024_secure_long_key}")
+
+    @Value("${jwt.secret}")
     private String secret;
+
+    @PostConstruct
+    public void validateSecret() {
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalStateException(
+                "JWT secret必须配置且长度不少于32个字符。请通过 'jwt.secret' 配置项设置JWT密钥。"
+            );
+        }
+    }
     
     @Value("${jwt.expiration:86400}")
     private Long expiration;

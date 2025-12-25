@@ -25,19 +25,22 @@ import java.util.Base64;
  */
 @Slf4j
 public class EncryptUtil {
-    
+
     private static final String AES_ALGORITHM = "AES/GCM/NoPadding";
     private static final int AES_KEY_SIZE = 256;
     private static final int GCM_TAG_LENGTH = 16;
     private static final int GCM_IV_LENGTH = 12;
-    
+
     private static final String RSA_ALGORITHM = "RSA/ECB/PKCS1Padding";
     private static final int RSA_KEY_SIZE = 2048;
-    
+
+    // BCryptPasswordEncoder实例，单例使用避免重复创建开销
+    private static final BCryptPasswordEncoder BCRYPT_ENCODER = new BCryptPasswordEncoder();
+
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
-    
+
     /**
      * SM2公钥加密
      */
@@ -50,7 +53,7 @@ public class EncryptUtil {
             throw new RuntimeException("SM2加密失败", e);
         }
     }
-    
+
     /**
      * SM2私钥解密
      */
@@ -63,7 +66,7 @@ public class EncryptUtil {
             throw new RuntimeException("SM2解密失败", e);
         }
     }
-    
+
     /**
      * SM3哈希加密
      */
@@ -75,7 +78,7 @@ public class EncryptUtil {
             throw new RuntimeException("SM3哈希失败", e);
         }
     }
-    
+
     /**
      * SM4加密
      */
@@ -88,7 +91,7 @@ public class EncryptUtil {
             throw new RuntimeException("SM4加密失败", e);
         }
     }
-    
+
     /**
      * SM4解密
      */
@@ -101,7 +104,7 @@ public class EncryptUtil {
             throw new RuntimeException("SM4解密失败", e);
         }
     }
-    
+
     /**
      * 生成AES密钥
      */
@@ -116,7 +119,7 @@ public class EncryptUtil {
             throw new RuntimeException("生成AES密钥失败", e);
         }
     }
-    
+
     /**
      * 生成RSA密钥对
      */
@@ -130,10 +133,15 @@ public class EncryptUtil {
             throw new RuntimeException("生成RSA密钥对失败", e);
         }
     }
-    
+
     /**
      * MD5哈希
+     *
+     * @deprecated MD5算法已被证明存在碰撞攻击漏洞，不应用于安全相关的场景。
+     *             如需哈希，请使用SM3（国密）或SHA-256（国际标准）。
+     *             此方法仅保留用于非安全目的的数据完整性校验。
      */
+    @Deprecated(message = "MD5不安全，不应用于安全相关场景")
     public static String md5Hash(String plainText) {
         try {
             return SecureUtil.md5(plainText);
@@ -151,8 +159,7 @@ public class EncryptUtil {
      */
     public static String bcryptEncrypt(String plainText) {
         try {
-            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-            return encoder.encode(plainText);
+            return BCRYPT_ENCODER.encode(plainText);
         } catch (Exception e) {
             log.error("BCrypt加密失败: {}", e.getMessage());
             throw new RuntimeException("BCrypt加密失败", e);
@@ -168,8 +175,7 @@ public class EncryptUtil {
      */
     public static boolean bcryptCheck(String plainText, String hashedText) {
         try {
-            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-            return encoder.matches(plainText, hashedText);
+            return BCRYPT_ENCODER.matches(plainText, hashedText);
         } catch (Exception e) {
             log.error("BCrypt校验失败: {}", e.getMessage());
             return false;
