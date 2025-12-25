@@ -1,0 +1,26 @@
+# helm/bankshield/Chart.yaml
+apiVersion: v2
+name: bankshield
+description: BankShield Data Security Management System
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - bank
+  - security
+  - data
+home: https://bankshield.com
+sources:
+  - https://github.com/bankshield/bankshield
+maintainers:
+  - name: DevOps Team
+    email: devops@bankshield.com
+dependencies:
+  - name: mysql
+    version: 9.4.7
+    repository: https://charts.bitnami.com/bitnami
+    condition: mysql.enabled
+  - name: redis
+    version: 17.11.3
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

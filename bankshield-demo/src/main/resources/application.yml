@@ -1,0 +1,78 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: bankshield-demo
+
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 3f342bb206
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    password:
+    database: 0
+    timeout: 30000ms
+    lettuce:
+      pool:
+        max-active: 20
+        max-wait: -1ms
+        max-idle: 5
+        min-idle: 0
+
+  # Actuator配置
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics
+    endpoint:
+      health:
+        show-details: always
+
+# JWT配置
+jwt:
+  secret: bankshield-demo-secret-key-2024
+  expiration: 3600
+  refresh-expiration: 604800
+
+# 日志配置
+logging:
+  level:
+    com.bankshield: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/bankshield-demo.log
+
+# Swagger配置
+springfox:
+  documentation:
+    swagger:
+      v2:
+        path: /v2/api-docs

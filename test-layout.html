@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankShield 布局测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        .layout-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-toggle {
+            margin-right: 20px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .sidebar-toggle:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .logo h2 {
+            margin: 0;
+            color: #409eff;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .user-info:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 200px;
+            background-color: #304156;
+            transition: width 0.3s;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed {
+            width: 64px;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .menu-item {
+            padding: 15px 20px;
+            color: #bfcbd9;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid transparent;
+        }
+        
+        .menu-item:hover {
+            background-color: #263445;
+            color: #fff;
+        }
+        
+        .menu-item.active {
+            background-color: #001528;
+            color: #409eff;
+            border-left-color: #409eff;
+        }
+        
+        .menu-icon {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+        }
+        
+        .sidebar.collapsed .menu-icon {
+            margin-right: 0;
+        }
+        
+        .sidebar.collapsed .menu-text {
+            display: none;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: #f5f7fa;
+            overflow: auto;
+            padding: 20px;
+        }
+        
+        .content-card {
+            background: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .submenu {
+            background-color: #1f2d3d;
+            display: none;
+        }
+        
+        .submenu.show {
+            display: block;
+        }
+        
+        .submenu-item {
+            padding: 12px 20px 12px 40px;
+            color: #bfcbd9;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .submenu-item:hover {
+            background-color: #001528;
+            color: #fff;
+        }
+        
+        .submenu-item.active {
+            background-color: #001528;
+            color: #409eff;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                bottom: 0;
+                z-index: 999;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-wrapper {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-container">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="header-left">
+                <div class="sidebar-toggle" onclick="toggleSidebar()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </div>
+                <div class="logo">
+                    <h2>BankShield</h2>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>系统管理员</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主体内容区域 -->
+        <div class="main-wrapper">
+            <!-- 侧边栏 -->
+            <aside class="sidebar" id="sidebar">
+                <ul class="sidebar-menu">
+                    <li>
+                        <div class="menu-item active" onclick="selectMenu(this, '/dashboard')">
+                            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span class="menu-text">数据大屏</span>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="menu-item" onclick="toggleSubmenu(this, 'system-menu')">
+                            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6m4.22-10.22l4.24 4.24M6.34 6.34l4.24 4.24m10.92 4.24l-4.24 4.24M8.08 17.66l-4.24 4.24"></path>
+                            </svg>
+                            <span class="menu-text">系统管理</span>
+                        </div>
+                        <ul class="submenu" id="system-menu">
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/user')">用户管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/system/role')">角色管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/system/dept')">部门管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/system/menu')">菜单管理</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="menu-item" onclick="toggleSubmenu(this, 'classification-menu')">
+                            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                            </svg>
+                            <span class="menu-text">数据分类分级</span>
+                        </div>
+                        <ul class="submenu" id="classification-menu">
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/asset-management')">资产管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/asset-map')">资产地图</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/review')">资产审核</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/data-source')">数据源管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/lineage')">血缘分析</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/classification/template')">敏感数据模板</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <div class="menu-item" onclick="toggleSubmenu(this, 'separation-menu')">
+                            <svg class="menu-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                            </svg>
+                            <span class="menu-text">三权分立管理</span>
+                        </div>
+                        <ul class="submenu" id="separation-menu">
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/separation/role-management')">三权角色管理</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/separation/permission-audit')">权限审计</li>
+                            <li class="submenu-item" onclick="selectSubmenu(this, '/separation/operation-log')">操作日志</li>
+                        </ul>
+                    </li>
+                </ul>
+            </aside>
+
+            <!-- 主内容区域 -->
+            <main class="main-content">
+                <div class="content-card">
+                    <h1>欢迎使用 BankShield 数据安全管理系统</h1>
+                    <p>系统已成功完成布局页面和导航菜单的完善。</p>
+                    
+                    <h2>已完成的功能：</h2>
+                    <ul>
+                        <li>✅ 响应式侧边栏布局</li>
+                        <li>✅ 动态路由菜单生成</li>
+                        <li>✅ Element Plus 菜单组件集成</li>
+                        <li>✅ 多级子菜单支持</li>
+                        <li>✅ 当前路由高亮显示</li>
+                        <li>✅ 权限控制菜单显示</li>
+                        <li>✅ 侧边栏折叠/展开功能</li>
+                        <li>✅ 深色主题侧边栏</li>
+                        <li>✅ 响应式设计</li>
+                    </ul>
+                    
+                    <h2>系统管理模块：</h2>
+                    <ul>
+                        <li>用户管理</li>
+                        <li>角色管理</li>
+                        <li>部门管理</li>
+                        <li>菜单管理</li>
+                    </ul>
+                    
+                    <h2>三权分立管理模块：</h2>
+                    <ul>
+                        <li>三权角色管理</li>
+                        <li>权限审计</li>
+                        <li>操作日志</li>
+                    </ul>
+                    
+                    <h2>数据分类分级模块：</h2>
+                    <ul>
+                        <li>资产管理</li>
+                        <li>资产地图</li>
+                        <li>资产审核</li>
+                        <li>数据源管理</li>
+                        <li>血缘分析</li>
+                        <li>敏感数据模板</li>
+                    </ul>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let sidebarCollapsed = false;
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebarCollapsed = !sidebarCollapsed;
+            sidebar.classList.toggle('collapsed', sidebarCollapsed);
+        }
+        
+        function selectMenu(element, path) {
+            // 移除所有active类
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // 添加active类到当前元素
+            element.classList.add('active');
+            console.log('导航到：', path);
+        }
+        
+        function selectSubmenu(element, path) {
+            // 移除所有submenu-item的active类
+            document.querySelectorAll('.submenu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            // 添加active类到当前元素
+            element.classList.add('active');
+            console.log('导航到：', path);
+        }
+        
+        function toggleSubmenu(element, menuId) {
+            const submenu = document.getElementById(menuId);
+            submenu.classList.toggle('show');
+            
+            // 切换箭头图标
+            const menuItem = element;
+            menuItem.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>

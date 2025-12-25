@@ -1,0 +1,95 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /encrypt
+
+spring:
+  application:
+    name: bankshield-encrypt
+  
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # MyBatis Plus配置
+  mybatis-plus:
+    configuration:
+      map-underscore-to-camel-case: true
+      cache-enabled: false
+      call-setters-on-nulls: true
+      jdbc-type-for-null: 'null'
+    global-config:
+      db-config:
+        id-type: auto
+        logic-delete-field: deleted
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+    mapper-locations: classpath*:/mapper/**/*.xml
+
+# 密钥管理配置
+bankshield:
+  encrypt:
+    # 主密钥配置（用于加密其他密钥）
+    master-key: "${ENCRYPT_MASTER_KEY:}"
+    # 存储类型：SM4
+    storage-type: "${ENCRYPT_STORAGE_TYPE:SM4}"
+    # 轮换配置
+    rotation:
+      # 默认轮换周期（天）
+      default-cycle: 90
+      # 提前多少天检查过期密钥
+      check-ahead-days: 30
+      # 任务执行时间（cron表达式）
+      cron: "0 0 2 * * ?"
+    # 密钥生成配置
+    generation:
+      # 默认过期时间（天）
+      default-expire-days: 365
+      # 默认密钥长度
+      default-key-length:
+        sm2: 256
+        sm4: 128
+        aes: 256
+        rsa: 2048
+
+# 日志配置
+logging:
+  level:
+    com.bankshield.encrypt: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/bankshield-encrypt.log
+    max-size: 100MB
+    max-history: 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Quartz配置
+spring:
+  quartz:
+    job-store-type: memory
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: BankShieldEncryptScheduler
+            instanceId: AUTO
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 10
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true

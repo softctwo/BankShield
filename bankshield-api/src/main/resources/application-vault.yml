@@ -1,0 +1,44 @@
+# Vault集成配置
+vault:
+  enabled: true
+  address: ${VAULT_ADDR:http://localhost:8200}
+  role-id: ${VAULT_ROLE_ID}
+  secret-id: ${VAULT_SECRET_ID}
+  master-key-path: bankshield/encrypt/master-key
+  timeout: 30
+  retry-attempts: 3
+  retry-interval: 1000
+
+# 加密配置（移除硬编码主密钥）
+bankshield:
+  encrypt:
+    # 主密钥现在从Vault获取，不再硬编码
+    # master-key: "${ENCRYPT_MASTER_KEY:}"  # ❌ 删除这行
+    storage-type: "${ENCRYPT_STORAGE_TYPE:SM4}"
+    vault-enabled: true
+    key-cache:
+      enabled: true
+      max-size: 100
+      ttl: 3600  # 1小时
+
+# Spring Vault配置
+spring:
+  vault:
+    host: ${VAULT_HOST:localhost}
+    port: ${VAULT_PORT:8200}
+    scheme: http
+    authentication: APPROLE
+    app-role:
+      role-id: ${VAULT_ROLE_ID}
+      secret-id: ${VAULT_SECRET_ID}
+      app-role-path: approle
+    connection-timeout: 5000
+    read-timeout: 15000
+    fail-fast: true
+    
+# 日志配置
+logging:
+  level:
+    org.springframework.vault: DEBUG
+    com.bankshield.api.service.SecureKeyManagementService: DEBUG
+    com.bankshield.api.service.AuditService: INFO

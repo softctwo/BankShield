@@ -1,0 +1,41 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      queryTimeout: 60s
+      httpMethod: POST
+    secureJsonData: {}
+
+  - name: BankShield-Metrics
+    type: prometheus
+    access: proxy
+    url: http://monitor:8888/actuator/prometheus
+    editable: true
+    jsonData:
+      timeInterval: 10s
+      queryTimeout: 30s
+      httpMethod: GET
+    secureJsonData: {}
+
+  - name: MySQL
+    type: mysql
+    access: proxy
+    url: mysql:3306
+    database: bankshield
+    user: bankshield
+    password: BankShield@2024
+    editable: true
+    jsonData:
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      mysqlVersion: "8.0"
+    secureJsonData:
+      password: BankShield@2024

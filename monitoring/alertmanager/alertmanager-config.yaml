@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'alerts@bankshield.com'
+      smtp_auth_username: 'alerts@bankshield.com'
+      smtp_auth_password: 'YOUR_SMTP_PASSWORD'
+
+    # 路由配置
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical'
+        continue: true
+      - match:
+          severity: warning
+        receiver: 'warning'
+        continue: true
+      - match_re:
+          service: ^(bankshield-api|bankshield-ui)$
+        receiver: 'bankshield-team'
+        group_interval: 5m
+        repeat_interval: 1h
+
+    # 接收器配置
+    receivers:
+    - name: 'default'
+      slack_configs:
+      - send_resolved: true
+        channel: '#alerts'
+        title: 'BankShield Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}{{ end }}'
+
+    - name: 'critical'
+      slack_configs:
+      - send_resolved: true
+        channel: '#critical-alerts'
+        title: '🚨 BankShield Critical Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Service:* {{ .Labels.service }}
+          *Time:* {{ .StartsAt }}
+          {{ end }}
+        color: 'danger'
+      email_configs:
+      - send_resolved: true
+        to: 'oncall@bankshield.com'
+        from: 'alerts@bankshield.com'
+        subject: '[CRITICAL] BankShield Alert - {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+    - name: 'warning'
+      slack_configs:
+      - send_resolved: true
+        channel: '#warnings'
+        title: '⚠️ BankShield Warning'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}{{ end }}'
+        color: 'warning'
+
+    - name: 'bankshield-team'
+      slack_configs:
+      - send_resolved: true
+        channel: '#bankshield-alerts'
+        title: 'BankShield Service Alert'
+        text: |
+          {{ range .Alerts }}
+          *Service:* {{ .Labels.service }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+
+    # 抑制规则
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'dev', 'instance']

@@ -1,0 +1,155 @@
+# BankShield监控告警模块配置
+
+monitor:
+  # 数据采集配置
+  data-collection:
+    enabled: true
+    # 系统指标采集间隔（秒）
+    system-interval: 300
+    # 数据库指标采集间隔（秒）
+    database-interval: 300
+    # 应用指标采集间隔（秒）
+    application-interval: 300
+    # 安全指标采集间隔（秒）
+    security-interval: 300
+  
+  # 告警检查配置
+  alert-check:
+    enabled: true
+    # 告警检查间隔（秒）
+    check-interval: 60
+    # 告警重复通知间隔（分钟）
+    repeat-interval: 30
+  
+  # 数据保留配置
+  data-retention:
+    # 监控指标数据保留天数
+    metric-days: 30
+    # 告警记录数据保留天数
+    alert-days: 90
+    # 是否启用自动清理
+    auto-cleanup: true
+  
+  # 通知配置
+  notification:
+    # 邮件配置
+    email:
+      enabled: true
+      smtp-host: smtp.bankshield.com
+      smtp-port: 465
+      smtp-username: alert@bankshield.com
+      smtp-password: ${EMAIL_PASSWORD:}
+      smtp-ssl: true
+      smtp-auth: true
+      from-address: alert@bankshield.com
+      from-name: BankShield监控系统
+    
+    # 短信配置
+    sms:
+      enabled: false
+      provider: aliyun
+      access-key: ${SMS_ACCESS_KEY:}
+      secret-key: ${SMS_SECRET_KEY:}
+      sign-name: BankShield
+      template-code: ${SMS_TEMPLATE_CODE:}
+    
+    # Webhook配置
+    webhook:
+      enabled: true
+      timeout: 30000
+      retry-times: 3
+      retry-interval: 5000
+    
+    # 钉钉配置
+    dingtalk:
+      enabled: false
+      webhook-url: https://oapi.dingtalk.com/robot/send
+      access-token: ${DINGTALK_ACCESS_TOKEN:}
+      secret: ${DINGTALK_SECRET:}
+      at-all: false
+    
+    # 企业微信配置
+    wechat:
+      enabled: false
+      webhook-url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send
+      access-token: ${WECHAT_ACCESS_TOKEN:}
+  
+  # WebSocket配置
+  websocket:
+    enabled: true
+    # WebSocket端点路径
+    endpoint: /ws/alerts
+    # 心跳间隔（秒）
+    heartbeat-interval: 30
+    # 连接超时时间（秒）
+    connection-timeout: 60
+  
+  # 系统监控配置
+  system-monitoring:
+    # CPU使用率阈值
+    cpu-threshold: 80
+    # 内存使用率阈值
+    memory-threshold: 85
+    # 磁盘使用率阈值
+    disk-threshold: 90
+    # 网络流量阈值（MB/s）
+    network-threshold: 100
+  
+  # 数据库监控配置
+  database-monitoring:
+    # 连接数阈值
+    connection-threshold: 100
+    # 慢查询时间阈值（秒）
+    slow-query-threshold: 2
+    # 慢查询数量阈值
+    slow-query-count-threshold: 5
+  
+  # 应用监控配置
+  application-monitoring:
+    # 线程数阈值
+    thread-threshold: 200
+    # GC次数阈值
+    gc-threshold: 100
+    # 响应时间阈值（毫秒）
+    response-time-threshold: 1000
+  
+  # 安全监控配置
+  security-monitoring:
+    # 异常登录次数阈值
+    abnormal-login-threshold: 3
+    # 活跃用户数阈值
+    active-user-threshold: 50
+    # 敏感数据访问次数阈值
+    sensitive-data-access-threshold: 10
+
+# 定时任务配置
+quartz:
+  job-store-type: jdbc
+  jdbc:
+    initialize-schema: never
+  properties:
+    org:
+      quartz:
+        scheduler:
+          instanceName: BankShieldScheduler
+          instanceId: AUTO
+        jobStore:
+          class: org.quartz.impl.jdbcjobstore.JobStoreTX
+          driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+          tablePrefix: QRTZ_
+          isClustered: true
+          clusterCheckinInterval: 10000
+          useProperties: false
+        threadPool:
+          class: org.quartz.simpl.SimpleThreadPool
+          threadCount: 10
+          threadPriority: 5
+          threadsInheritContextClassLoaderOfInitializingThread: true
+
+# 日志配置
+logging:
+  level:
+    com.bankshield.api.service.impl.MonitorDataCollectionServiceImpl: INFO
+    com.bankshield.api.service.impl.AlertRuleEngineImpl: INFO
+    com.bankshield.api.service.impl.NotificationServiceImpl: INFO
+    com.bankshield.api.job: INFO

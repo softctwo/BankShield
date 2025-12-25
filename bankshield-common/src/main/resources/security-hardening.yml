@@ -1,0 +1,257 @@
+# BankShield 安全加固配置
+
+# Web安全防护配置
+security:
+  waf:
+    enabled: true
+    # SQL注入检测模式: strict, normal, loose
+    sql-injection-mode: strict
+    # XSS检测模式: strict, normal, loose  
+    xss-detection-mode: strict
+    # 命令注入检测
+    command-injection-detection: true
+    # 路径遍历检测
+    path-traversal-detection: true
+    # 用户代理最大长度
+    max-user-agent-length: 500
+    # Content-Type最大长度
+    max-content-type-length: 100
+    # 请求体最大长度（用于检测）
+    max-request-body-length: 1048576  # 1MB
+    # 检测超时时间
+    detection-timeout: 5000  # 5秒
+    
+  # 安全响应头配置
+  headers:
+    enabled: true
+    # HSTS最大年龄（秒）
+    hsts-max-age: 31536000  # 1年
+    # 是否包含子域名
+    hsts-include-subdomains: true
+    # 预加载
+    hsts-preload: true
+    # CSP策略
+    content-security-policy: "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' ws: wss:; frame-ancestors 'none';"
+    # 引用策略
+    referrer-policy: "strict-origin-when-cross-origin"
+    # 权限策略
+    permissions-policy: "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    
+  # API限流配置
+  rate-limit:
+    enabled: true
+    # Redis配置
+    redis:
+      key-prefix: "bankshield:rate_limit:"
+      ttl-hours: 24
+    # 默认限流规则
+    default-rules:
+      - path: "/api/user/login"
+        rate: 10          # 每秒10次
+        capacity: 50      # 容量50
+        period: 1s
+        type: "login"
+      - path: "/api/key/*"
+        rate: 20          # 每秒20次
+        capacity: 100     # 容量100
+        period: 1s
+        type: "key"
+      - path: "/api/audit/export"
+        rate: 5           # 每秒5次
+        capacity: 10      # 容量10
+        period: 1m        # 1分钟
+        type: "export"
+      - path: "/api/*"
+        rate: 100         # 每秒100次
+        capacity: 200     # 容量200
+        period: 1s
+        type: "default"
+        
+  # API签名配置
+  signature:
+    enabled: true
+    # 签名过期时间（毫秒）
+    expire-time: 300000  # 5分钟
+    # 允许的时钟偏差（毫秒）
+    clock-skew: 60000    # 1分钟
+    # 应用密钥
+    app-secrets:
+      bankshield_web: "sk_live_1234567890abcdef"
+      bankshield_mobile: "sk_live_abcdef1234567890"
+      bankshield_api: "sk_live_0987654321fedcba"
+    # 需要签名的接口
+    protected-paths:
+      - "/api/key/*"
+      - "/api/encrypt/*"
+      - "/api/decrypt/*"
+      - "/api/audit/export"
+      - "/api/report/*"
+      
+  # 安全事件配置
+  incident:
+    enabled: true
+    # 自动响应
+    auto-response: true
+    # 自动阻断
+    auto-block: true
+    # 通知配置
+    notification:
+      enabled: true
+      # 邮件通知
+      email:
+        enabled: true
+        recipients: ["security@bankshield.com", "admin@bankshield.com"]
+      # 短信通知
+      sms:
+        enabled: true
+        recipients: ["13800138000", "13900139000"]
+      # WebHook通知
+      webhook:
+        enabled: true
+        url: "https://api.bankshield.com/security/alerts"
+        
+  # 密码策略配置
+  password-policy:
+    enabled: true
+    # 最小长度
+    min-length: 8
+    # 需要大写字母
+    require-uppercase: true
+    # 需要小写字母
+    require-lowercase: true
+    # 需要数字
+    require-digit: true
+    # 需要特殊字符
+    require-special: true
+    # 密码过期时间（天）
+    expiry-days: 90
+    # 历史密码数量（防止重用）
+    history-count: 5
+    # 最大重试次数
+    max-retries: 5
+    # 锁定时间（分钟）
+    lockout-minutes: 30
+    
+  # 会话安全配置
+  session:
+    enabled: true
+    # 会话超时时间（分钟）
+    timeout: 30
+    # 并发会话数限制
+    max-concurrent-sessions: 1
+    # 会话固定攻击防护
+    session-fixation-protection: true
+    # 会话劫持防护
+    session-hijacking-protection: true
+    
+  # 数据保护配置
+  data-protection:
+    enabled: true
+    # 数据加密
+    encryption:
+      enabled: true
+      # 算法
+      algorithm: "SM4"
+      # 密钥长度
+      key-size: 128
+      # 密钥轮换周期（天）
+      key-rotation-days: 90
+    # 数据脱敏
+    masking:
+      enabled: true
+      # 脱敏规则
+      rules:
+        - type: "PHONE"
+          pattern: "(\\d{3})\\d{4}(\\d{4})"
+          replacement: "$1****$2"
+        - type: "ID_CARD"
+          pattern: "(\\d{6})\\d{8}(\\d{4})"
+          replacement: "$1********$2"
+        - type: "BANK_CARD"
+          pattern: "(\\d{4})\\d{8,12}(\\d{4})"
+          replacement: "$1****$2"
+          
+  # 审计日志配置
+  audit:
+    enabled: true
+    # 操作审计
+    operation-audit: true
+    # 登录审计
+    login-audit: true
+    # 数据访问审计
+    data-access-audit: true
+    # 权限变更审计
+    permission-change-audit: true
+    # 审计日志保留时间（天）
+    retention-days: 365
+    # 审计日志存储
+    storage: "database"  # database, file, elasticsearch
+    
+  # 合规性检查配置
+  compliance:
+    enabled: true
+    # 等保2.0三级
+    level-2.0-grade-3: true
+    # PCI DSS
+    pci-dss: true
+    # ISO 27001
+    iso-27001: true
+    # 检查周期（天）
+    check-interval-days: 30
+    # 自动修复
+    auto-remediation: false
+    
+# Spring Security 配置
+spring:
+  security:
+    # 会话管理
+    session:
+      # 会话创建策略
+      session-creation-policy: stateless
+      # 会话超时
+      timeout: 30m
+    
+    # 密码编码器
+    password-encoder:
+      # 使用国密SM3
+      algorithm: "SM3"
+      
+    # HTTP安全配置
+    headers:
+      # 内容类型选项
+      content-type-options: true
+      # XSS保护
+      xss-protection: true
+      # 缓存控制
+      cache-control: true
+      # 帧选项
+      frame-options: true
+      # HSTS
+      hsts: true
+      # CSP
+      content-security-policy: true
+      
+# 应用配置
+bankshield:
+  security:
+    # 启用安全加固
+    enabled: true
+    # 生产环境模式
+    production-mode: true
+    # 调试模式
+    debug-mode: false
+    # 性能监控
+    performance-monitoring: true
+    
+# 日志配置
+logging:
+  level:
+    com.bankshield.security: DEBUG
+    com.bankshield.common.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: "logs/bankshield-security.log"
+    max-size: "100MB"
+    max-history: 30

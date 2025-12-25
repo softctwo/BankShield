@@ -1,0 +1,197 @@
+# BankShield密钥轮换配置
+# 平滑密钥轮换机制的配置参数
+
+key:
+  rotation:
+    # 是否启用密钥轮换
+    enabled: true
+    
+    # 是否启用自动轮换调度
+    auto-schedule: true
+    
+    # 自动检查到期密钥
+    auto-check: true
+    
+    # 轮换阶段配置（天数）
+    warm-up-days: 3        # 预热期：新密钥生成但暂不用于加密
+    dual-active-days: 7    # 双密钥期：新旧密钥同时用于加密
+    decrypt-only-days: 30  # 仅解密期：旧密钥仅用于解密历史数据
+    
+    # 预警配置
+    early-warning-days: 30 # 提前30天告警密钥即将过期
+    critical-warning-days: 7 # 提前7天严重告警
+    
+    # 定时任务配置（Cron表达式）
+    cron-check: "0 0 2 * * ?"      # 每天凌晨2点检查到期密钥
+    cron-auto-rotation: "0 0 3 * * ?"  # 每天凌晨3点执行自动轮换
+    cron-monitor: "0 */5 * * * ?"  # 每5分钟监控轮换状态
+    
+    # 轮换策略配置
+    strategy:
+      # 是否允许强制轮换
+      allow-force-rotation: true
+      
+      # 是否自动轮换即将过期的密钥
+      auto-rotate-expiring: true
+      
+      # 轮换失败重试次数
+      max-retry-count: 3
+      
+      # 重试间隔（分钟）
+      retry-interval: 60
+      
+      # 轮换并发数限制
+      max-concurrent-rotations: 5
+    
+    # 安全配置
+    security:
+      # 轮换操作是否需要审批
+      require-approval: false
+      
+      # 轮换通知配置
+      notification:
+        enabled: true
+        email-enabled: true
+        sms-enabled: false
+        system-notification-enabled: true
+        
+        # 通知接收者
+        recipients:
+          - "security@bankshield.com"
+          - "admin@bankshield.com"
+    
+    # 性能配置
+    performance:
+      # 轮换批次大小
+      batch-size: 10
+      
+      # 轮换间隔（毫秒）
+      rotation-interval: 5000
+      
+      # 数据库连接池配置
+      db-connection-pool-size: 20
+      
+      # 线程池配置
+      thread-pool:
+        core-pool-size: 5
+        max-pool-size: 20
+        queue-capacity: 100
+        keep-alive-seconds: 60
+    
+    # 监控配置
+    monitor:
+      # 是否启用监控
+      enabled: true
+      
+      # 监控数据保留天数
+      data-retention-days: 90
+      
+      # 监控指标收集间隔（秒）
+      metrics-interval: 300
+      
+      # 健康检查配置
+      health-check:
+        enabled: true
+        interval: 60
+        timeout: 30
+    
+    # 日志配置
+    logging:
+      # 轮换日志级别
+      level: INFO
+      
+      # 是否记录详细日志
+      detailed-logging: true
+      
+      # 日志文件配置
+      file:
+        enabled: true
+        max-size: 100MB
+        max-history: 30
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+---
+# 环境特定的配置
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+---
+# 开发环境配置
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+key:
+  rotation:
+    # 开发环境缩短轮换周期以便测试
+    warm-up-days: 1        # 1小时预热期
+    dual-active-days: 2    # 2小时双密钥期
+    decrypt-only-days: 3   # 3小时仅解密期
+    
+    cron-check: "0 */10 * * * ?"      # 每10分钟检查一次
+    cron-auto-rotation: "0 */15 * * * ?"  # 每15分钟执行轮换
+    cron-monitor: "0 */1 * * * ?"     # 每1分钟监控一次
+    
+    logging:
+      level: DEBUG
+      detailed-logging: true
+
+---
+# 测试环境配置
+spring:
+  config:
+    activate:
+      on-profile: test
+  
+key:
+  rotation:
+    # 测试环境使用较短的轮换周期
+    warm-up-days: 1
+    dual-active-days: 3
+    decrypt-only-days: 7
+    
+    strategy:
+      max-concurrent-rotations: 2
+    
+    logging:
+      level: DEBUG
+
+---
+# 生产环境配置
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+key:
+  rotation:
+    # 生产环境使用标准的轮换周期
+    warm-up-days: 3
+    dual-active-days: 7
+    decrypt-only-days: 30
+    
+    strategy:
+      # 生产环境更严格的配置
+      allow-force-rotation: false
+      require-approval: true
+      max-concurrent-rotations: 3
+    
+    security:
+      require-approval: true
+      notification:
+        email-enabled: true
+        sms-enabled: true
+    
+    performance:
+      batch-size: 5
+      rotation-interval: 10000
+    
+    monitor:
+      data-retention-days: 180
+      metrics-interval: 180
+    
+    logging:
+      level: INFO
+      detailed-logging: false

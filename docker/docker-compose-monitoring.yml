@@ -1,0 +1,254 @@
+version: '3.8'
+
+services:
+  # AlertManager告警管理
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: bankshield-alertmanager
+    restart: always
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./alertmanager/templates:/etc/alertmanager/templates
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--web.route-prefix=/'
+    networks:
+      - bankshield-network
+
+  # Node Exporter系统监控
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: bankshield-node-exporter
+    restart: always
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - bankshield-network
+
+  # MySQL Exporter数据库监控
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: bankshield-mysql-exporter
+    restart: always
+    ports:
+      - "9104:9104"
+    environment:
+      - DATA_SOURCE_NAME=bankshield:BankShield@2024@tcp(mysql:3306)/
+    networks:
+      - bankshield-network
+    depends_on:
+      - mysql
+
+  # Redis Exporter缓存监控
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: bankshield-redis-exporter
+    restart: always
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=
+    networks:
+      - bankshield-network
+    depends_on:
+      - redis
+
+  # Blackbox Exporter网络监控
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: bankshield-blackbox-exporter
+    restart: always
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml
+    networks:
+      - bankshield-network
+
+  # Pushgateway推送网关
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: bankshield-pushgateway
+    restart: always
+    ports:
+      - "9091:9091"
+    volumes:
+      - pushgateway_data:/pushgateway
+    networks:
+      - bankshield-network
+
+  # Grafana Loki日志聚合
+  loki:
+    image: grafana/loki:latest
+    container_name: bankshield-loki
+    restart: always
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - bankshield-network
+
+  # Promtail日志收集
+  promtail:
+    image: grafana/promtail:latest
+    container_name: bankshield-promtail
+    restart: always
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml
+      - ./logs:/var/log/bankshield
+      - /var/log:/var/log/host
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - bankshield-network
+    depends_on:
+      - loki
+
+  # Fluentd日志收集器
+  fluentd:
+    image: fluent/fluentd:latest
+    container_name: bankshield-fluentd
+    restart: always
+    ports:
+      - "24224:24224"
+      - "9880:9880"
+    volumes:
+      - ./fluentd/fluent.conf:/fluentd/etc/fluent.conf
+      - ./logs:/var/log/bankshield
+      - fluentd_data:/fluentd/log
+    networks:
+      - bankshield-network
+
+  # Elasticsearch日志存储
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: bankshield-elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - bankshield-network
+
+  # Kibana日志可视化
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    container_name: bankshield-kibana
+    restart: always
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    networks:
+      - bankshield-network
+    depends_on:
+      - elasticsearch
+
+  # Jaeger链路追踪
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: bankshield-jaeger
+    restart: always
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    volumes:
+      - jaeger_data:/tmp
+    networks:
+      - bankshield-network
+
+  # Zipkin链路追踪（备选）
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: bankshield-zipkin
+    restart: always
+    ports:
+      - "9411:9411"
+    volumes:
+      - zipkin_data:/data
+    networks:
+      - bankshield-network
+
+  # Grafana Tempo分布式追踪
+  tempo:
+    image: grafana/tempo:latest
+    container_name: bankshield-tempo
+    restart: always
+    ports:
+      - "3200:3200"
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo.yml
+      - tempo_data:/tmp/tempo
+    command: [ "-config.file=/etc/tempo.yml" ]
+    networks:
+      - bankshield-network
+
+  # VictoriaMetrics时序数据库（备选）
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: bankshield-victoriametrics
+    restart: always
+    ports:
+      - "8428:8428"
+      - "8089:8089"
+    volumes:
+      - victoriametrics_data:/victoria-metrics-data
+    command:
+      - '--storageDataPath=/victoria-metrics-data'
+      - '--httpListenAddr=:8428'
+      - '--graphiteListenAddr=:8089'
+      - '--opentsdbListenAddr=:4242'
+    networks:
+      - bankshield-network
+
+volumes:
+  alertmanager_data:
+    driver: local
+  pushgateway_data:
+    driver: local
+  loki_data:
+    driver: local
+  fluentd_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  jaeger_data:
+    driver: local
+  zipkin_data:
+    driver: local
+  tempo_data:
+    driver: local
+  victoriametrics_data:
+    driver: local
+
+networks:
+  bankshield-network:
+    external: true

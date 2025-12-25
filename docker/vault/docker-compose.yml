@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  vault:
+    image: vault:latest
+    container_name: bankshield-vault
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://0.0.0.0:8200
+      - VAULT_UI=true
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./config:/vault/config
+      - vault-data:/vault/data
+    command: server -config=/vault/config/config.hcl
+    networks:
+      - bankshield-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  vault-data:
+    driver: local
+
+networks:
+  bankshield-network:
+    external: true

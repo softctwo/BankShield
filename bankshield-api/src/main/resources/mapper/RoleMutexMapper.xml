@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bankshield.api.mapper.RoleMutexMapper">
+
+    <!-- 根据角色编码查询互斥角色列表 -->
+    <select id="selectMutexRoleCodesByRoleCode" resultType="java.lang.String">
+        SELECT mutex_role_code
+        FROM role_mutex
+        WHERE role_code = #{roleCode}
+    </select>
+
+    <!-- 批量查询角色互斥关系 -->
+    <select id="selectByRoleCodes" resultType="com.bankshield.api.entity.RoleMutex">
+        SELECT *
+        FROM role_mutex
+        WHERE role_code IN
+        <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+            #{roleCode}
+        </foreach>
+    </select>
+
+    <!-- 检查两个角色是否互斥 -->
+    <select id="countMutexRoles" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM role_mutex
+        WHERE (role_code = #{roleCode1} AND mutex_role_code = #{roleCode2})
+           OR (role_code = #{roleCode2} AND mutex_role_code = #{roleCode1})
+    </select>
+
+    <!-- 检查用户角色是否存在互斥 -->
+    <select id="selectUserRoleConflicts" resultType="com.bankshield.api.entity.RoleMutex">
+        SELECT DISTINCT rm.*
+        FROM role_mutex rm
+        INNER JOIN sys_user_role sur1 ON rm.role_code IN (
+            SELECT sr.role_code
+            FROM sys_role sr
+            INNER JOIN sys_user_role sur ON sr.id = sur.role_id
+            WHERE sur.user_id = #{userId}
+        )
+        INNER JOIN sys_user_role sur2 ON rm.mutex_role_code IN (
+            SELECT sr.role_code
+            FROM sys_role sr
+            INNER JOIN sys_user_role sur ON sr.id = sur.role_id
+            WHERE sur.user_id = #{userId}
+        )
+    </select>
+
+</mapper>

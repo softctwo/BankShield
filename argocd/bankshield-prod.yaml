@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bankshield-prod
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: bankshield
+  source:
+    repoURL: https://github.com/bankshield/bankshield-k8s
+    targetRevision: HEAD
+    path: prod
+    directory:
+      recurse: true
+      include: "*.yaml"
+    helm:
+      valueFiles:
+      - values.yaml
+      - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bankshield-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    managedNamespaceMetadata:
+      labels:
+        bankshield.io/managed-by: argocd
+  revisionHistoryLimit: 10
+  info:
+  - name: Description
+    value: BankShield生产环境
+  - name: Owner
+    value: devops-team@bankshield.com

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bankshield.api.mapper.UserMapper">
+
+    <!-- 根据用户ID查询角色编码列表 -->
+    <select id="selectRoleCodesByUserId" resultType="java.lang.String">
+        SELECT sr.role_code
+        FROM sys_role sr
+        INNER JOIN sys_user_role sur ON sr.id = sur.role_id
+        WHERE sur.user_id = #{userId}
+        AND sr.status = 1
+    </select>
+
+    <!-- 统计指定角色的用户数量 -->
+    <select id="countUsersByRoleCode" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT su.id)
+        FROM sys_user su
+        INNER JOIN sys_user_role sur ON su.id = sur.user_id
+        INNER JOIN sys_role sr ON sur.role_id = sr.id
+        WHERE sr.role_code = #{roleCode}
+        AND su.status = 1
+        AND sr.status = 1
+    </select>
+
+</mapper>

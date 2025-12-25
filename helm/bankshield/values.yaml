@@ -1,0 +1,234 @@
+# helm/bankshield/values.yaml
+
+# 全局配置
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# 应用配置
+app:
+  name: bankshield
+  version: "1.0.0"
+  environment: "dev"
+
+# 镜像配置
+image:
+  registry: harbor.bankshield.com
+  repository: bankshield/api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# 服务配置
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+
+# 容器配置
+container:
+  port: 8080
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    httpGet:
+      path: /api/ready
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# 环境变量
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "{{ .Values.app.environment }}"
+  - name: SERVER_PORT
+    value: "8080"
+  - name: LOGGING_LEVEL_ROOT
+    value: "INFO"
+
+# 数据库配置
+database:
+  type: mysql
+  host: mysql
+  port: 3306
+  name: bankshield
+  username: bankshield
+  password: bankshield123
+  maxConnections: 20
+  connectionTimeout: 30000
+
+# Redis配置
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+  password: ""
+  database: 0
+  timeout: 2000
+
+# 存储配置
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /data
+
+# 自动扩缩容
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# 服务网格
+serviceMesh:
+  enabled: false
+  istio:
+    enabled: false
+    gateway: bankshield-gateway
+    virtualService: bankshield-vs
+
+# 监控配置
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+    interval: 30s
+  grafana:
+    enabled: true
+    dashboards:
+      - bankshield-overview
+      - bankshield-performance
+
+# 日志配置
+logging:
+  enabled: true
+  level: INFO
+  format: json
+  elasticsearch:
+    enabled: false
+    host: elasticsearch
+    port: 9200
+    index: bankshield-logs
+
+# 安全扫描
+security:
+  enabled: true
+  scanImage: true
+  scanDependencies: true
+  trivy:
+    enabled: true
+    severity: "CRITICAL,HIGH"
+    ignoreUnfixed: true
+
+# 网络策略
+networkPolicy:
+  enabled: false
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: bankshield
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: bankshield
+
+# Pod安全策略
+podSecurityPolicy:
+  enabled: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+  readOnlyRootFilesystem: true
+
+# 节点亲和性
+nodeAffinity:
+  enabled: false
+  required:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: node-type
+        operator: In
+        values: ["app"]
+  preferred:
+    - weight: 100
+      preference:
+        matchExpressions:
+        - key: zone
+          operator: In
+          values: ["us-east-1a"]
+
+# 容忍度
+tolerations: []
+
+# 反亲和性
+antiAffinity:
+  enabled: true
+  type: soft
+  topologyKey: kubernetes.io/hostname
+
+# 初始化容器
+initContainers: []
+
+# Sidecar容器
+sidecars: []
+
+# 生命周期钩子
+lifecycle: {}
+
+# 健康检查配置
+healthCheck:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# 配置管理
+configManagement:
+  enabled: true
+  configMap: bankshield-config
+  secret: bankshield-secret
+
+# 灰度发布
+canary:
+  enabled: false
+  weight: 20
+  analysis:
+    interval: 30s
+    threshold: 5
+    maxWeight: 50
+    stepWeight: 10
+
+# 蓝绿部署
+blueGreen:
+  enabled: false
+  activeService: bankshield-active
+  previewService: bankshield-preview
+  previewReplicaCount: 1
+  autoPromotionEnabled: true
+  autoPromotionSeconds: 30

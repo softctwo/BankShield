@@ -1,0 +1,154 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: bankshield-monitor
+  
+  # Redis配置
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
+  
+  # RabbitMQ配置（可选，用于告警通知）
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    publisher-returns: true
+    publisher-confirm-type: correlated
+
+# Eureka配置
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+# Spring Boot Admin配置
+boot:
+  admin:
+    ui:
+      title: "BankShield监控系统"
+      brand: "<img src='assets/img/icon-spring-boot-admin.svg'><span>BankShield Monitor</span>"
+    notify:
+      mail:
+        enabled: false
+      slack:
+        enabled: false
+
+# 管理端口配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active:dev}
+  
+# 监控指标配置
+monitoring:
+  metrics:
+    enabled: true
+    retention-days: 30
+    
+  # Prometheus配置
+  prometheus:
+    enabled: true
+    endpoint: /actuator/prometheus
+    
+  # 告警配置
+  alerting:
+    enabled: true
+    alertmanager:
+      url: ${ALERTMANAGER_URL:http://localhost:9093}
+      timeout: 10s
+    
+  # 自定义指标配置
+  custom:
+    metrics:
+      # 安全相关指标
+      security:
+        enabled: true
+        alert-threshold: 5  # 安全告警阈值
+      
+      # 业务相关指标
+      business:
+        enabled: true
+        data-processing-rate: 1000  # 数据处理速率阈值
+      
+      # 系统性能指标
+      performance:
+        enabled: true
+        response-time-threshold: 500  # 响应时间阈值(ms)
+        cpu-threshold: 80  # CPU使用率阈值
+        memory-threshold: 85  # 内存使用率阈值
+
+# 日志配置
+logging:
+  level:
+    com.bankshield.monitor: INFO
+    de.codecentric.boot.admin: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/bankshield-monitor.log
+    max-size: 100MB
+    max-history: 30
+
+# 开发环境配置
+---
+spring:
+  profiles: dev
+  
+logging:
+  level:
+    com.bankshield.monitor: DEBUG
+    org.springframework.cloud: DEBUG
+
+# 生产环境配置
+---
+spring:
+  profiles: prod
+  
+logging:
+  level:
+    com.bankshield.monitor: WARN
+    de.codecentric.boot.admin: WARN
+    
+monitoring:
+  metrics:
+    retention-days: 90
+  alerting:
+    alertmanager:
+      url: ${ALERTMANAGER_URL:http://alertmanager:9093}

@@ -1,0 +1,199 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: bankshield-api
+  
+  # 数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+      username: root
+      password: 123456
+      initial-size: 10
+      max-active: 100
+      min-idle: 10
+      max-wait: 60000
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        login-username: admin
+        login-password: admin
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          merge-sql: false
+        wall:
+          config:
+            multi-statement-allow: true
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true  # 开启二级缓存
+    call-setters-on-nulls: true
+    jdbc-type-for-null: 'null'
+    default-executor-type: reuse  # 重用预编译语句
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.bankshield.api.entity
+  # 分页插件配置
+  plugins:
+    pagination:
+      overflow: false  # 溢出总页数后是否进行处理
+      max-limit: 500   # 单页分页条数限制
+      db-type: mysql
+      optimize: true   # 开启count优化
+
+# 日志配置
+logging:
+  level:
+    com.bankshield: debug
+    org.springframework.web: info
+    org.mybatis: debug
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/bankshield-api.log
+    max-size: 100MB
+    max-history: 30
+
+# Eureka配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+# Sentinel配置
+sentinel:
+  transport:
+    dashboard: localhost:8080
+    port: 8719
+
+# 三权分立配置
+role:
+  mutex:
+    enabled: true  # 是否启用角色互斥检查
+  violation:
+    alert:
+      enabled: true  # 是否启用违规告警
+  check:
+    job:
+      cron: "0 0 2 * * ?"  # 角色检查任务执行时间（每天凌晨2点）
+
+# 性能优化配置
+performance:
+  optimization:
+    enabled: true  # 是否启用性能优化
+    cache-warm-up: true  # 是否启用缓存预热
+    query-timeout: 30  # 查询超时时间（秒）
+    batch-size: 1000   # 批量操作大小
+    max-connections: 100  # 最大连接数
+    
+# 限流配置
+rate-limit:
+  enabled: true  # 是否启用限流
+  default-permits: 100  # 默认每秒许可数
+  timeout-ms: 1000  # 获取许可超时时间（毫秒）
+
+# 审计日志完整性配置
+audit:
+  block:
+    enabled: true        # 启用审计日志区块
+    size: 1000           # 每个区块包含1000条审计日志
+    interval-minutes: 5  # 每5分钟检查一次
+    blockchain-anchor:   # 区块链存证（可选）
+      enabled: false
+      anchor-interval: 60  # 每60分钟上链一次
+
+# JVM监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+      base-path: "/actuator"
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: production
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# 线程池配置
+async:
+  executor:
+    core-pool-size: 16  # CPU核心数
+    max-pool-size: 32   # 核心数*2
+    queue-capacity: 5000
+    thread-name-prefix: "BankShield-Async-"
+
+# Redis缓存配置
+spring:
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 50
+        max-idle: 25
+        min-idle: 5
+        max-wait: 1000ms
+    
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 默认10分钟
+      cache-null-values: false
+      key-prefix: "bankshield:"

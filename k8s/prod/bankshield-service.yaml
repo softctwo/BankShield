@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bankshield-api
+  namespace: bankshield-prod
+  labels:
+    app: bankshield-api
+    tier: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: bankshield-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bankshield-ui
+  namespace: bankshield-prod
+  labels:
+    app: bankshield-ui
+    tier: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: bankshield-ui
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bankshield-api-headless
+  namespace: bankshield-prod
+  labels:
+    app: bankshield-api
+    tier: backend
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: bankshield-api

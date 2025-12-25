@@ -1,0 +1,383 @@
+<template>
+  <div class="dept-container">
+    <el-card>
+      <template #header>
+        <div class="card-header">
+          <span>部门管理</span>
+          <el-button type="primary" @click="handleAdd">
+            <el-icon><Plus /></el-icon>
+            新增部门
+          </el-button>
+        </div>
+      </template>
+
+      <!-- 搜索表单 -->
+      <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form-item label="部门名称">
+          <el-input v-model="searchForm.name" placeholder="请输入部门名称" clearable />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">
+            <el-icon><Search /></el-icon>
+            搜索
+          </el-button>
+          <el-button @click="handleReset">
+            <el-icon><Refresh /></el-icon>
+            重置
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 数据表格 -->
+      <el-table
+        :data="tableData"
+        v-loading="loading"
+        row-key="id"
+        border
+        style="width: 100%"
+      >
+        <el-table-column prop="name" label="部门名称" min-width="150" />
+        <el-table-column prop="code" label="部门编码" min-width="120" />
+        <el-table-column prop="leader" label="负责人" width="120" />
+        <el-table-column prop="phone" label="联系电话" width="150" />
+        <el-table-column prop="email" label="邮箱" min-width="180" />
+        <el-table-column prop="sort" label="排序" width="80" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+              {{ row.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="handleEdit(row)">
+              编辑
+            </el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleAddChild(row)"
+              v-if="row.parentId === 0"
+            >
+              添加下级
+            </el-button>
+            <el-button type="danger" link @click="handleDelete(row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <!-- 新增/编辑对话框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
+      width="500px"
+    >
+      <el-form
+        ref="deptFormRef"
+        :model="deptForm"
+        :rules="deptRules"
+        label-width="100px"
+      >
+        <el-form-item label="上级部门" prop="parentId">
+          <el-tree-select
+            v-model="deptForm.parentId"
+            :data="deptTreeData"
+            :props="treeProps"
+            placeholder="请选择上级部门"
+            check-strictly
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="部门名称" prop="name">
+          <el-input v-model="deptForm.name" placeholder="请输入部门名称" />
+        </el-form-item>
+        <el-form-item label="部门编码" prop="code">
+          <el-input v-model="deptForm.code" placeholder="请输入部门编码" />
+        </el-form-item>
+        <el-form-item label="负责人" prop="leader">
+          <el-input v-model="deptForm.leader" placeholder="请输入负责人姓名" />
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="deptForm.phone" placeholder="请输入联系电话" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="deptForm.email" placeholder="请输入邮箱地址" />
+        </el-form-item>
+        <el-form-item label="排序" prop="sort">
+          <el-input-number v-model="deptForm.sort" :min="0" :max="999" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="deptForm.status">
+            <el-radio :label="1">启用</el-radio>
+            <el-radio :label="0">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+
+// 搜索表单
+const searchForm = reactive({
+  name: '',
+  status: undefined
+})
+
+// 表格数据
+const tableData = ref([])
+const loading = ref(false)
+
+// 对话框
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+const deptFormRef = ref<FormInstance>()
+
+// 部门表单
+const deptForm = reactive({
+  id: undefined,
+  parentId: 0,
+  name: '',
+  code: '',
+  leader: '',
+  phone: '',
+  email: '',
+  sort: 0,
+  status: 1
+})
+
+// 表单验证规则
+const deptRules: FormRules = {
+  name: [
+    { required: true, message: '请输入部门名称', trigger: 'blur' }
+  ],
+  code: [
+    { required: true, message: '请输入部门编码', trigger: 'blur' }
+  ]
+}
+
+// 部门树数据（用于选择上级部门）
+const deptTreeData = ref([])
+const treeProps = {
+  children: 'children',
+  label: 'name'
+}
+
+// 搜索
+const handleSearch = () => {
+  loadData()
+}
+
+// 重置
+const handleReset = () => {
+  searchForm.name = ''
+  searchForm.status = undefined
+  loadData()
+}
+
+// 新增
+const handleAdd = () => {
+  dialogTitle.value = '新增部门'
+  deptForm.id = undefined
+  deptForm.parentId = 0
+  deptForm.name = ''
+  deptForm.code = ''
+  deptForm.leader = ''
+  deptForm.phone = ''
+  deptForm.email = ''
+  deptForm.sort = 0
+  deptForm.status = 1
+  dialogVisible.value = true
+}
+
+// 添加下级部门
+const handleAddChild = (row: any) => {
+  dialogTitle.value = '新增下级部门'
+  deptForm.id = undefined
+  deptForm.parentId = row.id
+  deptForm.name = ''
+  deptForm.code = ''
+  deptForm.leader = ''
+  deptForm.phone = ''
+  deptForm.email = ''
+  deptForm.sort = 0
+  deptForm.status = 1
+  dialogVisible.value = true
+}
+
+// 编辑
+const handleEdit = (row: any) => {
+  dialogTitle.value = '编辑部门'
+  Object.assign(deptForm, row)
+  dialogVisible.value = true
+}
+
+// 删除
+const handleDelete = (row: any) => {
+  ElMessageBox.confirm(
+    `确定要删除部门 "${row.name}" 吗？`,
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    ElMessage.success('删除成功')
+    loadData()
+  })
+}
+
+// 提交表单
+const handleSubmit = () => {
+  deptFormRef.value?.validate((valid) => {
+    if (valid) {
+      ElMessage.success(dialogTitle.value.includes('新增') ? '新增成功' : '编辑成功')
+      dialogVisible.value = false
+      loadData()
+    }
+  })
+}
+
+// 加载数据
+const loadData = () => {
+  loading.value = true
+  // 模拟数据
+  setTimeout(() => {
+    tableData.value = [
+      {
+        id: 1,
+        parentId: 0,
+        name: '总部',
+        code: 'HQ',
+        leader: '张总',
+        phone: '13800000000',
+        email: 'zhang@bankshield.com',
+        sort: 1,
+        status: 1,
+        createTime: '2024-01-01 10:00:00'
+      },
+      {
+        id: 2,
+        parentId: 0,
+        name: '技术部',
+        code: 'TECH',
+        leader: '李经理',
+        phone: '13800000001',
+        email: 'li@bankshield.com',
+        sort: 2,
+        status: 1,
+        createTime: '2024-01-02 10:00:00'
+      },
+      {
+        id: 3,
+        parentId: 0,
+        name: '财务部',
+        code: 'FINANCE',
+        leader: '王经理',
+        phone: '13800000002',
+        email: 'wang@bankshield.com',
+        sort: 3,
+        status: 1,
+        createTime: '2024-01-03 10:00:00'
+      },
+      {
+        id: 4,
+        parentId: 2,
+        name: '研发组',
+        code: 'RD',
+        leader: '赵组长',
+        phone: '13800000003',
+        email: 'zhao@bankshield.com',
+        sort: 1,
+        status: 1,
+        createTime: '2024-01-04 10:00:00'
+      },
+      {
+        id: 5,
+        parentId: 2,
+        name: '测试组',
+        code: 'TEST',
+        leader: '孙组长',
+        phone: '13800000004',
+        email: 'sun@bankshield.com',
+        sort: 2,
+        status: 1,
+        createTime: '2024-01-05 10:00:00'
+      }
+    ]
+    loading.value = false
+  }, 500)
+}
+
+// 加载部门树数据
+const loadDeptTree = () => {
+  // 模拟部门树数据
+  deptTreeData.value = [
+    {
+      id: 0,
+      name: '顶级部门'
+    },
+    {
+      id: 1,
+      name: '总部'
+    },
+    {
+      id: 2,
+      name: '技术部',
+      children: [
+        {
+          id: 4,
+          name: '研发组'
+        },
+        {
+          id: 5,
+          name: '测试组'
+        }
+      ]
+    },
+    {
+      id: 3,
+      name: '财务部'
+    }
+  ]
+}
+
+onMounted(() => {
+  loadData()
+  loadDeptTree()
+})
+</script>
+
+<style lang="less" scoped>
+.dept-container {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .search-form {
+    margin-bottom: 20px;
+  }
+}
+</style>

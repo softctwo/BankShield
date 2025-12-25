@@ -1,0 +1,257 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: bankshield-gateway
+  
+  # 数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          merge-sql: false
+        wall:
+          config:
+            multi-statement-allow: true
+  
+  # Redis配置
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    timeout: 5000ms
+    database: 0
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+  
+  # JPA配置
+  jpa:
+    database: mysql
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+  
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+  
+  # 异步任务配置
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 60s
+        allow-core-thread-timeout: true
+      thread-name-prefix: BankShield-Async-
+  
+  # Cloud Gateway配置
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # API服务路由
+        - id: bankshield-api
+          uri: lb://bankshield-api
+          predicates:
+            - Path=/api/**
+          filters:
+            - RateLimitFilter
+            - AntiBrushFilter
+            - SignatureVerificationFilter
+            - ApiAuditFilter
+        
+        # 认证服务路由
+        - id: bankshield-auth
+          uri: lb://bankshield-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - RateLimitFilter
+            - AntiBrushFilter
+            - ApiAuditFilter
+        
+        # 用户服务路由
+        - id: bankshield-user
+          uri: lb://bankshield-user
+          predicates:
+            - Path=/user/**
+          filters:
+            - RateLimitFilter
+            - AntiBrushFilter
+            - ApiAuditFilter
+  
+  # Eureka客户端配置
+  eureka:
+    client:
+      service-url:
+        defaultZone: http://localhost:8761/eureka/
+    instance:
+      prefer-ip-address: true
+      instance-id: ${spring.application.name}:${server.port}
+
+# 限流配置
+rate-limit:
+  enabled: true
+  default-rate: 100  # 默认每秒100个请求
+  rules:
+    # IP限流规则
+    - dimension: IP
+      threshold: 100
+      window: 1
+      enabled: true
+    # 用户限流规则
+    - dimension: USER
+      threshold: 200
+      window: 1
+      enabled: true
+    # API限流规则
+    - dimension: API
+      threshold: 1000
+      window: 1
+      enabled: true
+    # 全局限流规则
+    - dimension: GLOBAL
+      threshold: 10000
+      window: 1
+      enabled: true
+
+# IP黑名单配置
+blacklist:
+  enabled: true
+  auto-block-threshold: 100  # 1分钟内100次请求自动封禁
+  max-requests-per-second: 50  # 每秒最大请求数
+  max-path-changes-per-second: 10  # 每秒最大路径变化数
+  max-error-rate: 0.5  # 最大错误率（50%）
+  max-consecutive-errors: 10  # 最大连续错误数
+  default-block-duration: 3600  # 默认封禁时长（秒，1小时）
+
+# API审计配置
+api-audit:
+  enabled: true
+  log-authorization: false  # 是否记录Authorization头
+  log-body: false  # 是否记录请求体
+  max-body-size: 10485760  # 最大记录体大小（10MB）
+  slow-query-threshold: 1000  # 慢查询阈值（毫秒）
+
+# 签名验证配置
+signature:
+  enabled: true
+  expire-time: 300000  # 签名过期时间（毫秒，5分钟）
+  algorithms:
+    - SM3  # 支持的签名算法
+
+# 日志配置
+logging:
+  level:
+    com.bankshield.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/bankshield-gateway.log
+    max-size: 100MB
+    max-history: 30
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 自定义配置
+bankshield:
+  gateway:
+    # 过滤器配置
+    filters:
+      # 限流过滤器
+      rate-limit:
+        order: -100
+        enabled: true
+      # 防刷过滤器
+      anti-brush:
+        order: -90
+        enabled: true
+      # 签名验证过滤器
+      signature:
+        order: -80
+        enabled: true
+      # API审计过滤器
+      api-audit:
+        order: 0
+        enabled: true
+    
+    # 安全配置
+    security:
+      # 白名单IP（不经过限流和防刷检查）
+      whitelist-ips:
+        - 127.0.0.1
+        - 0:0:0:0:0:0:0:1  # IPv6 localhost
+      # 黑名单IP（直接拒绝）
+      blacklist-ips: []
+      # 需要认证的路径前缀
+      auth-required-paths:
+        - /api/admin
+        - /api/user
+        - /api/security
+      # 不需要认证的路径
+      auth-excluded-paths:
+        - /api/auth/login
+        - /api/auth/register
+        - /api/public
+    
+    # 缓存配置
+    cache:
+      # Redis缓存过期时间（秒）
+      expire-times:
+        route-config: 3600  # 路由配置缓存1小时
+        rate-limit-rules: 300  # 限流规则缓存5分钟
+        blacklist: 60  # 黑名单缓存1分钟
+        app-secrets: 86400  # 应用密钥缓存24小时

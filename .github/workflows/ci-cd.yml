@@ -1,0 +1,561 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每天凌晨2点运行完整测试
+    - cron: '0 2 * * *'
+
+env:
+  JAVA_VERSION: '8'
+  MAVEN_OPTS: -Xmx4g -XX:MaxPermSize=256m
+  NODE_VERSION: '16'
+
+jobs:
+  
+  # 代码质量检查
+  code-quality:
+    runs-on: ubuntu-latest
+    name: 代码质量检查
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # 获取完整历史用于SonarQube分析
+    
+    - name: 设置JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: 缓存Maven依赖
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: 运行SonarQube分析
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      run: |
+        mvn sonar:sonar \
+          -Dsonar.projectKey=bankshield \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+          -Dsonar.java.binaries=target/classes
+    
+    - name: 运行OWASP依赖检查
+      run: |
+        mvn org.owasp:dependency-check-maven:check \
+          -DfailBuildOnCVSS=7 \
+          -DsuppressionFile=dependency-check-suppressions.xml
+    
+    - name: 上传OWASP报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: owasp-report
+        path: target/dependency-check-report.html
+
+  # 单元测试
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: 单元测试
+    needs: code-quality
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test123
+          MYSQL_DATABASE: bankshield_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      
+      redis:
+        image: redis:6.0-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 设置JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: 缓存Maven依赖
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: 运行单元测试
+      run: |
+        mvn clean test \
+          -Dspring.profiles.active=test \
+          -Dtest=**/*UnitTest.java \
+          -DfailIfNoTests=false
+    
+    - name: 生成测试报告
+      run: |
+        mvn surefire-report:report \
+          -Dsurefire.reportFormat=html
+    
+    - name: 生成Allure报告
+      run: |
+        mvn allure:report
+        mvn allure:upload --project=bankshield
+    
+    - name: 上传单元测试报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: unit-test-reports
+        path: |
+          target/surefire-reports/
+          target/site/allure-maven-plugin/
+          target/site/jacoco/
+
+  # 集成测试
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: 集成测试
+    needs: unit-tests
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test123
+          MYSQL_DATABASE: bankshield_integration_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      
+      redis:
+        image: redis:6.0-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 设置JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: 缓存Maven依赖
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: 启动后端服务
+      run: |
+        cd bankshield-api
+        mvn spring-boot:run \
+          -Dspring.profiles.active=test,integration \
+          -Dserver.port=8080 &
+        
+        # 等待服务启动
+        timeout 120 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 5; done'
+    
+    - name: 运行集成测试
+      run: |
+        mvn clean test \
+          -Dspring.profiles.active=test,integration \
+          -Dtest=**/*IntegrationTest.java \
+          -DfailIfNoTests=false
+    
+    - name: 上传集成测试报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-reports
+        path: target/surefire-reports/
+
+  # E2E测试
+  e2e-tests:
+    runs-on: ubuntu-latest
+    name: E2E测试
+    needs: integration-tests
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 设置Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: bankshield-ui/package-lock.json
+    
+    - name: 安装前端依赖
+      run: |
+        cd bankshield-ui
+        npm ci
+    
+    - name: 构建前端应用
+      run: |
+        cd bankshield-ui
+        npm run build
+    
+    - name: 安装Cypress
+      run: |
+        cd bankshield-ui
+        npm install cypress --save-dev
+    
+    - name: 运行E2E测试
+      run: |
+        cd bankshield-ui
+        npm run serve &
+        
+        # 等待前端服务启动
+        timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 5; done'
+        
+        # 运行Cypress测试
+        npx cypress run \
+          --spec "cypress/e2e/**/*.cy.js" \
+          --browser chrome \
+          --headless \
+          --env apiBaseUrl=http://localhost:8080
+    
+    - name: 上传E2E测试结果
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: cypress-results
+        path: |
+          bankshield-ui/cypress/screenshots/
+          bankshield-ui/cypress/videos/
+    
+    - name: 上传E2E报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cypress-reports
+        path: bankshield-ui/cypress/results/
+
+  # 性能测试
+  performance-tests:
+    runs-on: ubuntu-latest
+    name: 性能测试
+    needs: integration-tests
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 设置Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: 安装k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: 启动测试环境
+      run: |
+        cd bankshield-api
+        mvn spring-boot:run \
+          -Dspring.profiles.active=test,performance \
+          -Dserver.port=8080 &
+        
+        # 等待服务启动
+        timeout 120 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 5; done'
+    
+    - name: 运行k6性能测试
+      run: |
+        cd tests/performance
+        k6 run bankshield-k6-test.js \
+          --out json=results/performance-results.json \
+          --out influxdb=http://localhost:8086/k6 \
+          --env API_BASE_URL=http://localhost:8080 \
+          --env TEST_USER=admin \
+          --env TEST_PASSWORD=123456
+    
+    - name: 运行JMeter性能测试
+      run: |
+        # 安装JMeter
+        wget https://downloads.apache.org//jmeter/binaries/apache-jmeter-5.5.zip
+        unzip apache-jmeter-5.5.zip
+        
+        # 运行JMeter测试
+        cd tests/performance
+        ../apache-jmeter-5.5/bin/jmeter -n \
+          -t bankshield-performance-test.jmx \
+          -l results/jmeter-results.jtl \
+          -e -o results/jmeter-report
+    
+    - name: 上传性能测试报告
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-reports
+        path: |
+          tests/performance/results/
+          tests/performance/k6-results.json
+          tests/performance/jmeter-results.jtl
+
+  # 安全扫描
+  security-scan:
+    runs-on: ubuntu-latest
+    name: 安全扫描
+    needs: code-quality
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 运行Trivy容器扫描
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: 上传Trivy扫描结果
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: 运行CodeQL分析
+      uses: github/codeql-action/analyze@v2
+      with:
+        languages: java
+    
+    - name: 运行Snyk安全扫描
+      uses: snyk/actions/maven@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --sarif-file-output=snyk-results.sarif
+    
+    - name: 上传Snyk扫描结果
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: snyk-results.sarif
+
+  # 测试覆盖率报告
+  coverage-report:
+    runs-on: ubuntu-latest
+    name: 测试覆盖率报告
+    needs: [unit-tests, integration-tests]
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 设置JDK 8
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: 缓存Maven依赖
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: 生成覆盖率报告
+      run: |
+        mvn clean test jacoco:report \
+          -Dspring.profiles.active=test \
+          -Djacoco.haltOnFailure=false
+    
+    - name: 上传覆盖率到Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./target/site/jacoco/jacoco.xml
+        flags: unittests
+        name: codecov-umbrella
+    
+    - name: 生成覆盖率徽章
+      run: |
+        # 生成覆盖率报告摘要
+        COVERAGE=$(grep -o 'Total[^%]*%' target/site/jacoco/index.html | grep -o '[0-9]*%' | head -1)
+        echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+    
+    - name: 上传覆盖率报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: target/site/jacoco/
+
+  # 部署到测试环境
+  deploy-test:
+    runs-on: ubuntu-latest
+    name: 部署到测试环境
+    needs: [unit-tests, integration-tests, e2e-tests]
+    if: github.ref == 'refs/heads/develop'
+    environment: test
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 构建应用
+      run: |
+        mvn clean package -DskipTests
+        cd bankshield-ui && npm run build
+    
+    - name: 部署到测试服务器
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: ${{ secrets.TEST_SERVER_HOST }}
+        username: ${{ secrets.TEST_SERVER_USER }}
+        key: ${{ secrets.TEST_SERVER_KEY }}
+        script: |
+          # 停止旧服务
+          docker-compose -f /opt/bankshield/docker-compose.test.yml down
+          
+          # 拉取最新代码
+          cd /opt/bankshield
+          git pull origin develop
+          
+          # 构建并启动新服务
+          docker-compose -f docker-compose.test.yml up -d --build
+          
+          # 等待服务启动
+          timeout 300 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 10; done'
+          
+          echo "测试环境部署完成"
+    
+    - name: 运行健康检查
+      run: |
+        curl -f http://${{ secrets.TEST_SERVER_HOST }}:8080/actuator/health
+        curl -f http://${{ secrets.TEST_SERVER_HOST }}:3000
+
+  # 发布报告
+  publish-reports:
+    runs-on: ubuntu-latest
+    name: 发布测试报告
+    needs: [unit-tests, integration-tests, e2e-tests, performance-tests, coverage-report]
+    if: always()
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+    
+    - name: 下载所有测试报告
+      uses: actions/download-artifact@v3
+      with:
+        path: reports
+    
+    - name: 生成综合测试报告
+      run: |
+        mkdir -p reports/combined
+        
+        # 合并所有报告
+        cp -r reports/unit-test-reports/* reports/combined/ 2>/dev/null || true
+        cp -r reports/integration-test-reports/* reports/combined/ 2>/dev/null || true
+        cp -r reports/cypress-reports/* reports/combined/ 2>/dev/null || true
+        cp -r reports/performance-reports/* reports/combined/ 2>/dev/null || true
+        cp -r reports/coverage-report/* reports/combined/ 2>/dev/null || true
+        
+        # 生成报告索引
+        cat > reports/combined/index.html << EOF
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>BankShield 测试报告</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #333; }
+            .report-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+            .report-link { display: block; margin: 10px 0; padding: 10px; background: #f5f5f5; text-decoration: none; border-radius: 3px; }
+            .report-link:hover { background: #e0e0e0; }
+          </style>
+        </head>
+        <body>
+          <h1>BankShield 综合测试报告</h1>
+          <div class="report-section">
+            <h2>测试执行摘要</h2>
+            <p>执行时间: $(date)</p>
+            <p>代码覆盖率: ${{ env.COVERAGE }}</p>
+          </div>
+          <div class="report-section">
+            <h2>测试报告链接</h2>
+            <a href="surefire-report.html" class="report-link">单元测试报告</a>
+            <a href="allure-report/index.html" class="report-link">Allure 测试报告</a>
+            <a href="jacoco/index.html" class="report-link">代码覆盖率报告</a>
+            <a href="jmeter-report/index.html" class="report-link">性能测试报告</a>
+          </div>
+        </body>
+        </html>
+        EOF
+    
+    - name: 部署报告到GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./reports/combined
+        publish_branch: gh-pages
+    
+    - name: 上传综合报告
+      uses: actions/upload-artifact@v3
+      with:
+        name: combined-test-reports
+        path: reports/combined/
+
+  # 通知
+  notify:
+    runs-on: ubuntu-latest
+    name: 通知
+    needs: [code-quality, unit-tests, integration-tests, e2e-tests, performance-tests, security-scan, publish-reports]
+    if: always()
+    
+    steps:
+    - name: 发送测试结果通知
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#ci-cd'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        text: |
+          BankShield CI/CD Pipeline 执行完成
+          - 代码质量检查: ${{ needs.code-quality.result }}
+          - 单元测试: ${{ needs.unit-tests.result }}
+          - 集成测试: ${{ needs.integration-tests.result }}
+          - E2E测试: ${{ needs.e2e-tests.result }}
+          - 性能测试: ${{ needs.performance-tests.result }}
+          - 安全扫描: ${{ needs.security-scan.result }}
+          - 报告发布: ${{ needs.publish-reports.result }}
+          
+          详细报告: https://pages.github.com/${{ github.repository }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

@@ -1,0 +1,212 @@
+global:
+  smtp_smarthost: 'smtp.bankshield.com:587'
+  smtp_from: 'alerts@bankshield.com'
+  smtp_auth_username: 'alerts@bankshield.com'
+  smtp_auth_password: 'BankShield@2024'
+  smtp_require_tls: true
+  
+  # Slack配置（可选）
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+# 路由配置
+route:
+  group_by: ['alertname', 'severity', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'bankshield-default'
+  routes:
+    # 关键告警路由
+    - match:
+        severity: critical
+      receiver: 'bankshield-critical'
+      continue: true
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 30m
+    
+    # 安全告警路由
+    - match:
+        type: security
+      receiver: 'bankshield-security'
+      continue: true
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 15m
+    
+    # 业务告警路由
+    - match:
+        type: business
+      receiver: 'bankshield-business'
+      continue: true
+      group_wait: 30s
+      group_interval: 1m
+      repeat_interval: 2h
+    
+    # 合规告警路由
+    - match:
+        type: compliance
+      receiver: 'bankshield-compliance'
+      continue: true
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 4h
+
+# 接收器配置
+receivers:
+  - name: 'bankshield-default'
+    email_configs:
+      - to: 'ops@bankshield.com'
+        subject: '[BankShield] 系统告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt }}
+          服务: {{ .Labels.service }}
+          级别: {{ .Labels.severity }}
+          {{ end }}
+        headers:
+          From: 'BankShield Monitoring <alerts@bankshield.com>'
+          X-Priority: '3'
+
+  - name: 'bankshield-critical'
+    email_configs:
+      - to: 'urgent@bankshield.com, oncall@bankshield.com'
+        subject: '[CRITICAL] BankShield紧急告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          {{ range .Alerts }}
+          告警名称: {{ .Annotations.summary }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt }}
+          服务: {{ .Labels.service }}
+          实例: {{ .Labels.instance }}
+          级别: {{ .Labels.severity }}
+          
+          处理建议:
+          1. 立即检查相关服务状态
+          2. 查看详细日志信息
+          3. 必要时联系技术支持
+          {{ end }}
+        headers:
+          From: 'BankShield Critical <alerts@bankshield.com>'
+          X-Priority: '1'
+        require_tls: true
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#bankshield-critical'
+        title: '🚨 BankShield Critical Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Instance: {{ .Labels.instance }}
+          Severity: {{ .Labels.severity }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+        color: 'danger'
+        send_resolved: true
+
+  - name: 'bankshield-security'
+    email_configs:
+      - to: 'security@bankshield.com, ops@bankshield.com'
+        subject: '[SECURITY] BankShield安全告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          🔒 SECURITY ALERT 🔒
+          
+          {{ range .Alerts }}
+          安全威胁: {{ .Annotations.summary }}
+          详细描述: {{ .Annotations.description }}
+          威胁类型: {{ .Labels.threat_type }}
+          来源: {{ .Labels.source }}
+          时间: {{ .StartsAt }}
+          级别: {{ .Labels.severity }}
+          
+          安全建议:
+          1. 立即检查相关安全策略
+          2. 分析威胁来源和攻击模式
+          3. 加强相关防护措施
+          4. 记录安全事件详情
+          {{ end }}
+        headers:
+          From: 'BankShield Security <alerts@bankshield.com>'
+          X-Priority: '1'
+    
+    webhook_configs:
+      - url: 'http://security-gateway.bankshield.com/api/alerts'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: 'alertmanager'
+            password: 'BankShield@2024'
+
+  - name: 'bankshield-business'
+    email_configs:
+      - to: 'business@bankshield.com, ops@bankshield.com'
+        subject: '[BUSINESS] BankShield业务告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          📊 BUSINESS ALERT 📊
+          
+          {{ range .Alerts }}
+          业务功能: {{ .Labels.function }}
+          指标: {{ .Labels.metric }}
+          描述: {{ .Annotations.description }}
+          时间: {{ .StartsAt }}
+          级别: {{ .Labels.severity }}
+          
+          业务影响:
+          1. 可能影响用户体验
+          2. 需要关注业务指标变化
+          3. 必要时通知相关业务部门
+          {{ end }}
+        headers:
+          From: 'BankShield Business <alerts@bankshield.com>'
+          X-Priority: '2'
+
+  - name: 'bankshield-compliance'
+    email_configs:
+      - to: 'compliance@bankshield.com, security@bankshield.com'
+        subject: '[COMPLIANCE] BankShield合规告警 - {{ .GroupLabels.alertname }}'
+        body: |
+          📋 COMPLIANCE ALERT 📋
+          
+          {{ range .Alerts }}
+          合规项: {{ .Annotations.summary }}
+          详细描述: {{ .Annotations.description }}
+          合规标准: {{ .Labels.standard }}
+          时间: {{ .StartsAt }}
+          级别: {{ .Labels.severity }}
+          
+          合规要求:
+          1. 立即检查合规状态
+          2. 评估合规风险
+          3. 制定整改计划
+          4. 记录合规问题
+          5. 跟踪整改进度
+          {{ end }}
+        headers:
+          From: 'BankShield Compliance <alerts@bankshield.com>'
+          X-Priority: '2'
+
+# 抑制规则
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service', 'instance']
+
+  - source_match:
+      severity: 'critical'
+      type: 'system'
+    target_match_re:
+      type: '.*'
+    equal: ['service', 'instance']
+
+# 静默配置模板（用于维护模式）
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

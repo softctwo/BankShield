@@ -1,0 +1,88 @@
+# 水印模块配置
+watermark:
+  # 输出文件路径
+  output:
+    path: /app/watermark/output
+  
+  # 上传文件路径
+  upload:
+    path: /app/watermark/upload
+  
+  # 水印图片路径
+  image:
+    path: /app/watermark/images
+  
+  # 提取配置
+  extract:
+    # 提取敏感度 (0.0 - 1.0)
+    sensitivity: 0.8
+    # 最大文件大小 (MB)
+    max-file-size: 50
+    # 支持的文件类型
+    supported-types: pdf,doc,docx,xls,xlsx,jpg,jpeg,png,gif,bmp
+  
+  # 嵌入配置
+  embed:
+    # 默认透明度 (0-100)
+    default-transparency: 30
+    # 默认字体大小
+    default-font-size: 12
+    # 默认字体颜色
+    default-font-color: "#CCCCCC"
+    # 默认字体
+    default-font-family: "Arial"
+  
+  # 任务配置
+  task:
+    # 最大并发任务数
+    max-concurrent-tasks: 10
+    # 任务超时时间 (分钟)
+    task-timeout: 60
+    # 进度更新间隔 (秒)
+    progress-interval: 5
+  
+  # 数据库配置
+  database:
+    # 水印列前缀
+    column-prefix: "wm_"
+    # 伪列名称
+    pseudo-column: "watermark_data"
+    # 批处理大小
+    batch-size: 1000
+
+# 文件上传配置
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+  
+  # 异步任务配置
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 20
+        queue-capacity: 100
+        thread-name-prefix: watermark-task-
+  
+  # Quartz定时任务配置
+  quartz:
+    job-store-type: memory
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: watermark-scheduler
+            instanceId: AUTO
+          threadPool:
+            class: org.quartz.simpl.SimpleThreadPool
+            threadCount: 10
+            threadPriority: 5
+            threadsInheritContextClassLoaderOfInitializingThread: true
+
+# 日志配置
+logging:
+  level:
+    com.bankshield.api.service.impl: DEBUG
+    com.bankshield.api.controller.WatermarkController: DEBUG

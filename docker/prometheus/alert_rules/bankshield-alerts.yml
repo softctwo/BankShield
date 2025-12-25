@@ -1,0 +1,239 @@
+groups:
+  - name: bankshield-system-alerts
+    rules:
+      # 服务宕机告警
+      - alert: BankShieldServiceDown
+        expr: up{job=~"bankshield-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bankshield
+          type: system
+        annotations:
+          summary: "BankShield服务宕机"
+          description: "服务 {{ $labels.job }} 实例 {{ $labels.instance }} 已经宕机超过1分钟"
+          runbook_url: "https://docs.bankshield.com/runbooks/service-down"
+
+      # CPU使用率过高告警
+      - alert: BankShieldHighCPUUsage
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "CPU使用率过高"
+          description: "实例 {{ $labels.instance }} 的CPU使用率超过80%，当前值为 {{ $value }}%"
+
+      # 内存使用率过高告警
+      - alert: BankShieldHighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "内存使用率过高"
+          description: "实例 {{ $labels.instance }} 的内存使用率超过85%，当前值为 {{ $value }}%"
+
+      # 磁盘空间不足告警
+      - alert: BankShieldLowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: bankshield
+          type: system
+        annotations:
+          summary: "磁盘空间不足"
+          description: "实例 {{ $labels.instance }} 的磁盘使用率超过90%，当前值为 {{ $value }}%"
+
+      # API响应时间过长告警
+      - alert: BankShieldHighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(bankshield_api_response_time_seconds_bucket[5m])) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "API响应时间过长"
+          description: "API 95分位响应时间超过500ms，当前值为 {{ $value }}s"
+
+      # 错误率过高告警
+      - alert: BankShieldHighErrorRate
+        expr: rate(bankshield_api_response_time_seconds_count{status="500"}[5m]) / rate(bankshield_api_response_time_seconds_count[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "API错误率过高"
+          description: "API错误率超过5%，当前错误率为 {{ $value }}%"
+
+  - name: bankshield-security-alerts
+    rules:
+      # 安全告警数量异常
+      - alert: BankShieldSecurityAlertSpike
+        expr: rate(bankshield_security_alerts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: bankshield
+          type: security
+        annotations:
+          summary: "安全告警激增"
+          description: "安全告警数量异常激增，当前速率为 {{ $value }} 个/秒"
+
+      # 异常登录检测
+      - alert: BankShieldSuspiciousLogin
+        expr: increase(bankshield_user_login_total{status="failure"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: bankshield
+          type: security
+        annotations:
+          summary: "异常登录尝试"
+          description: "检测到大量登录失败，5分钟内失败次数: {{ $value }}"
+
+      # 权限拒绝异常
+      - alert: BankShieldPermissionDeniedSpike
+        expr: rate(bankshield_permission_checks_total{result="denied"}[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+          service: bankshield
+          type: security
+        annotations:
+          summary: "权限拒绝异常"
+          description: "权限拒绝请求异常增加，当前速率为 {{ $value }} 次/秒"
+
+  - name: bankshield-business-alerts
+    rules:
+      # 数据处理异常
+      - alert: BankShieldDataProcessingFailure
+        expr: rate(bankshield_data_processing_total{status="failure"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: bankshield
+          type: business
+        annotations:
+          summary: "数据处理异常"
+          description: "数据处理失败率异常，当前失败速率为 {{ $value }} 次/秒"
+
+      # 加密操作异常
+      - alert: BankShieldEncryptionFailure
+        expr: rate(bankshield_encryption_operations_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: bankshield
+          type: business
+        annotations:
+          summary: "加密操作异常"
+          description: "加密操作频率异常降低，当前速率为 {{ $value }} 次/秒"
+
+      # 审计日志缺失
+      - alert: BankShieldAuditLogGap
+        expr: rate(bankshield_audit_logs_total[5m]) < 0.01
+        for: 5m
+        labels:
+          severity: critical
+          service: bankshield
+          type: compliance
+        annotations:
+          summary: "审计日志缺失"
+          description: "审计日志生成异常，当前速率为 {{ $value }} 条/秒"
+
+  - name: bankshield-infrastructure-alerts
+    rules:
+      # 数据库连接异常
+      - alert: BankShieldDatabaseConnectionFailure
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bankshield
+          type: infrastructure
+        annotations:
+          summary: "数据库连接失败"
+          description: "MySQL数据库连接失败，服务可能不可用"
+
+      # Redis连接异常
+      - alert: BankShieldRedisConnectionFailure
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: bankshield
+          type: infrastructure
+        annotations:
+          summary: "Redis连接失败"
+          description: "Redis缓存服务连接失败，可能影响系统性能"
+
+      # JVM内存使用过高
+      - alert: BankShieldJVMHighMemoryUsage
+        expr: (jvm_memory_used_bytes / jvm_memory_max_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "JVM内存使用率过高"
+          description: "JVM堆内存使用率超过85%，当前值为 {{ $value }}%"
+
+      # GC停顿时间过长
+      - alert: BankShieldLongGCPause
+        expr: rate(jvm_gc_pause_seconds_sum[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: bankshield
+          type: performance
+        annotations:
+          summary: "GC停顿时间过长"
+          description: "GC停顿时间超过100ms，当前值为 {{ $value }}s"
+
+  - name: bankshield-compliance-alerts
+    rules:
+      # 密钥轮换逾期
+      - alert: BankShieldKeyRotationOverdue
+        expr: (time() - encrypt_key_last_rotation) > 7776000  # 90天
+        for: 1h
+        labels:
+          severity: high
+          service: bankshield
+          type: compliance
+        annotations:
+          summary: "密钥轮换逾期"
+          description: "加密密钥已经超过90天未轮换，存在安全风险"
+
+      # 合规评分过低
+      - alert: BankShieldLowComplianceScore
+        expr: compliance_score < 80
+        for: 30m
+        labels:
+          severity: warning
+          service: bankshield
+          type: compliance
+        annotations:
+          summary: "合规评分过低"
+          description: "系统合规评分低于80分，当前评分为 {{ $value }}"
+
+      # 审计日志完整性告警
+      - alert: BankShieldAuditLogIntegrityIssue
+        expr: audit_log_integrity_percentage < 95
+        for: 10m
+        labels:
+          severity: high
+          service: bankshield
+          type: compliance
+        annotations:
+          summary: "审计日志完整性问题"
+          description: "审计日志完整性低于95%，当前完整性为 {{ $value }}%"
