@@ -6,6 +6,7 @@ import com.bankshield.api.service.LoginAuditService;
 import com.bankshield.api.service.UserService;
 import com.bankshield.common.result.Result;
 import com.bankshield.common.utils.EncryptUtil;
+import com.bankshield.common.utils.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,6 +21,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 用户服务实现类
@@ -32,9 +36,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private UserMapper userMapper;
-    
+
     @Autowired
     private LoginAuditService loginAuditService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public Result<User> getUserById(Long id) {
@@ -207,7 +214,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Result<String> login(String username, String password) {
+    public Result<Map<String, Object>> login(String username, String password) {
         try {
             // 参数校验
             if (!StringUtils.hasText(username)) {
@@ -263,8 +270,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 记录登录成功审计
             loginAuditService.recordLoginSuccess(user.getId(), username, loginIp, loginIp, browser, os);
 
-            // TODO: 生成JWT token并返回
-            return Result.success("登录成功");
+            // 获取用户权限（角色编码）
+            List<String> authorities = userMapper.selectRoleCodesByUserId(user.getId());
+
+            // 生成JWT token
+            String token = jwtUtil.generateToken(user.getId(), username, authorities);
+
+            // 构建返回数据
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("token", token);
+            resultData.put("userId", user.getId());
+            resultData.put("username", username);
+            resultData.put("name", user.getName());
+            resultData.put("message", "登录成功");
+
+            // 返回成功结果
+            return Result.<Map<String, Object>>success(resultData, "登录成功");
         } catch (Exception e) {
             log.error("用户登录失败: {}", e.getMessage());
             return Result.error("登录失败");

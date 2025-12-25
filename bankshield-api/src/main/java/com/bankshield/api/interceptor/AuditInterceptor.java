@@ -6,6 +6,8 @@ import com.bankshield.api.service.OperationAuditService;
 import com.bankshield.common.core.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -287,21 +289,61 @@ public class AuditInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 获取当前用户ID（需要从Session或Token中获取）
+     * 获取当前用户ID
      */
     private Long getCurrentUserId(HttpServletRequest request) {
-        // 这里需要从Session或JWT Token中获取当前用户ID
-        // 暂时返回默认值
-        return 1L;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                Object principal = authentication.getPrincipal();
+
+                // 如果是字符串类型且为数字，则转换为Long
+                if (principal instanceof String) {
+                    try {
+                        return Long.parseLong((String) principal);
+                    } catch (NumberFormatException e) {
+                        log.warn("无法将用户标识符转换为用户ID: {}", principal);
+                    }
+                }
+
+                // 如果是自定义的UserDetails对象，需要根据实际情况获取ID
+                // 例如：return ((UserDetails) principal).getUserId();
+            }
+
+            // 如果获取失败，返回匿名用户ID
+            log.warn("无法从认证信息中获取用户ID，使用默认值");
+            return null;
+        } catch (Exception e) {
+            log.error("获取当前用户ID时发生错误: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**
-     * 获取当前用户名（需要从Session或Token中获取）
+     * 获取当前用户名
      */
     private String getCurrentUsername(HttpServletRequest request) {
-        // 这里需要从Session或JWT Token中获取当前用户名
-        // 暂时返回默认值
-        return "system";
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                Object principal = authentication.getPrincipal();
+
+                // 如果principal是字符串，则直接返回
+                if (principal instanceof String) {
+                    return (String) principal;
+                }
+
+                // 如果是自定义的UserDetails对象，需要根据实际情况获取用户名
+                // 例如：return ((UserDetails) principal).getUsername();
+            }
+
+            // 如果获取失败，返回匿名用户名
+            log.warn("无法从认证信息中获取用户名，使用默认值");
+            return "anonymous";
+        } catch (Exception e) {
+            log.error("获取当前用户名时发生错误: {}", e.getMessage());
+            return "anonymous";
+        }
     }
 
     /**

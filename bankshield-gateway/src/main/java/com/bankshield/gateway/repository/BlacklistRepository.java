@@ -2,6 +2,9 @@ package com.bankshield.gateway.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.connection.RedisCallback;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -101,11 +104,32 @@ public class BlacklistRepository {
     
     /**
      * 获取所有黑名单IP
-     * 
+     * 使用SCAN命令替代KEYS，避免阻塞Redis
+     *
      * @return 黑名单IP列表
      */
     public java.util.Set<String> getAllBlacklistedIps() {
-        return redisTemplate.keys(BLACKLIST_KEY_PREFIX + "*");
+        return redisTemplate.execute((RedisCallback<java.util.Set<String>>) connection -> {
+            java.util.Set<String> keys = new java.util.HashSet<>();
+            String pattern = BLACKLIST_KEY_PREFIX + "*";
+            long cursor = 0;
+            do {
+                ScanOptions options = ScanOptions.scanOptions()
+                    .match(pattern)
+                    .count(1000)
+                    .build();
+
+                Cursor<byte[]> scanResult = connection.scan(options);
+                while (scanResult.hasNext()) {
+                    byte[] keyBytes = scanResult.next();
+                    keys.add(new String(keyBytes));
+                }
+                cursor = scanResult.getCursorId();
+                scanResult.close();
+            } while (cursor != 0);
+
+            return keys;
+        });
     }
     
     /**
@@ -134,11 +158,41 @@ public class BlacklistRepository {
     
     /**
      * 清空黑名单
+     * 使用SCAN命令替代KEYS，避免阻塞Redis
      */
     public void clearBlacklist() {
-        java.util.Set<String> keys = redisTemplate.keys(BLACKLIST_KEY_PREFIX + "*");
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
+        redisTemplate.execute((RedisCallback<Void>) connection -> {
+            String pattern = BLACKLIST_KEY_PREFIX + "*";
+            long cursor = 0;
+            java.util.List<byte[]> keysToDelete = new java.util.ArrayList<>();
+
+            do {
+                ScanOptions options = ScanOptions.scanOptions()
+                    .match(pattern)
+                    .count(1000)
+                    .build();
+
+                Cursor<byte[]> scanResult = connection.scan(options);
+                while (scanResult.hasNext()) {
+                    byte[] keyBytes = scanResult.next();
+                    keysToDelete.add(keyBytes);
+
+                    // 批量删除，避免单次操作数据量过大
+                    if (keysToDelete.size() >= 1000) {
+                        connection.del(keysToDelete.toArray(new byte[0][]));
+                        keysToDelete.clear();
+                    }
+                }
+                cursor = scanResult.getCursorId();
+                scanResult.close();
+            } while (cursor != 0);
+
+            // 删除剩余的key
+            if (!keysToDelete.isEmpty()) {
+                connection.del(keysToDelete.toArray(new byte[0][]));
+            }
+
+            return null;
+        });
     }
 }

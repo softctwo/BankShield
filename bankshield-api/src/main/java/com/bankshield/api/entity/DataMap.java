@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,11 +17,11 @@ import java.time.LocalDateTime;
  * 对应数据库表：data_map
  * 用于记录数据地图的元信息和配置
  */
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @TableName("data_map")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataMap implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -65,7 +65,7 @@ public class DataMap implements Serializable {
     private Integer relationshipCount;
 
     /**
-     * 地图数据（JSON格式，存储完整的地图数据）
+     * 地图数据（JSON格式）
      */
     @TableField("map_data")
     private String mapData;
@@ -90,6 +90,7 @@ public class DataMap implements Serializable {
     /**
      * 状态: ACTIVE, INACTIVE, DRAFT
      */
+    @TableField("status")
     private String status;
 
     /**
@@ -105,6 +106,12 @@ public class DataMap implements Serializable {
     private LocalDateTime createTime;
 
     /**
+     * 更新人ID
+     */
+    @TableField("update_by")
+    private Long updateBy;
+
+    /**
      * 更新时间
      */
     @TableField("update_time")
@@ -113,5 +120,6 @@ public class DataMap implements Serializable {
     /**
      * 备注
      */
+    @TableField("remark")
     private String remark;
 }

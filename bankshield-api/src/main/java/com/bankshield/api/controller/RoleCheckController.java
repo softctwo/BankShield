@@ -4,14 +4,18 @@ import com.bankshield.api.annotation.RoleExclusive;
 import com.bankshield.api.entity.RoleMutex;
 import com.bankshield.api.entity.RoleViolation;
 import com.bankshield.api.service.RoleCheckService;
+import com.bankshield.api.service.RoleService;
+import com.bankshield.api.service.UnifiedAuditService;
 import com.bankshield.common.result.PageResult;
 import com.bankshield.common.result.Result;
+import com.bankshield.common.security.SecurityUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +36,8 @@ import java.util.List;
 public class RoleCheckController {
 
     private final RoleCheckService roleCheckService;
+    private final RoleService roleService;
+    private final UnifiedAuditService unifiedAuditService;
 
     /**
      * 分配角色（带互斥检查）
@@ -39,27 +45,66 @@ public class RoleCheckController {
     @PostMapping("/assign")
     @ApiOperation(value = "分配角色", notes = "分配角色时进行三权分立互斥检查")
     @RoleExclusive(checkType = RoleExclusive.CheckType.ASSIGN, forceCheck = true)
-    public Result<Void> assignRole(
+    @Transactional(rollbackFor = Exception.class)
+    public Result<String> assignRole(
             @ApiParam(value = "用户ID", required = true) @RequestParam Long userId,
             @ApiParam(value = "角色编码", required = true) @RequestParam String roleCode) {
         
         try {
             log.info("分配角色：用户ID={}, 角色编码={}", userId, roleCode);
             
-            // 检查角色分配
+            // 1. 检查角色分配是否违反三权分立原则
             boolean canAssign = roleCheckService.checkRoleAssignment(userId, roleCode);
-            
             if (!canAssign) {
                 return Result.error("角色分配违反三权分立原则");
             }
             
-            // TODO: 调用实际的分配角色服务
-            // roleService.assignRole(userId, roleCode);
+            // 2. 获取角色信息
+            Result<List<com.bankshield.api.entity.Role>> enabledRolesResult = roleService.getAllEnabledRoles();
+            if (!enabledRolesResult.isSuccess()) {
+                return Result.error("获取角色信息失败");
+            }
             
-            return Result.success();
+            List<com.bankshield.api.entity.Role> enabledRoles = enabledRolesResult.getData();
+            com.bankshield.api.entity.Role targetRole = enabledRoles.stream()
+                    .filter(role -> roleCode.equals(role.getRoleCode()))
+                    .findFirst()
+                    .orElse(null);
+            
+            if (targetRole == null) {
+                return Result.error("角色不存在或已禁用");
+            }
+            
+            // 3. 执行实际的角色分配
+            Result<String> assignResult = roleService.assignRoleToUser(userId, targetRole.getId());
+            if (!assignResult.isSuccess()) {
+                log.error("角色分配失败：用户ID={}, 角色ID={}, 错误={}", userId, targetRole.getId(), assignResult.getMessage());
+                return assignResult;
+            }
+            
+            // 4. 记录审计日志
+            try {
+                Long currentUserId = SecurityUtils.getCurrentUserId();
+                String currentUsername = SecurityUtils.getCurrentUsername();
+                unifiedAuditService.submitAuditLog(
+                    "ROLE_ASSIGN",
+                    String.valueOf(currentUserId),
+                    "USER:" + userId + ",ROLE:" + roleCode,
+                    "SUCCESS",
+                    getClientIp(),
+                    "分配角色：用户ID=" + userId + ", 角色编码=" + roleCode + ", 操作人=" + currentUsername
+                );
+            } catch (Exception auditException) {
+                log.warn("记录审计日志失败", auditException);
+                // 审计日志失败不影响主业务流程
+            }
+            
+            log.info("角色分配成功：用户ID={}, 角色编码={}", userId, roleCode);
+            return Result.success("角色分配成功");
+            
         } catch (Exception e) {
             log.error("分配角色失败", e);
-            return Result.error("分配角色失败");
+            return Result.error("分配角色失败：" + e.getMessage());
         }
     }
 
@@ -219,13 +264,47 @@ public class RoleCheckController {
         try {
             log.info("手动触发角色检查");
 
-            // 异步执行检查任务
-            new Thread(() -> roleCheckService.executeRoleCheckJob()).start();
+            // 使用线程池异步执行检查任务，避免OOM风险
+            roleCheckService.executeRoleCheckJobAsync();
 
             return Result.success("角色检查任务已触发，正在后台执行");
         } catch (Exception e) {
             log.error("手动触发角色检查失败", e);
             return Result.error("触发失败");
         }
+    }
+
+    /**
+     * 获取客户端IP地址
+     */
+    private String getClientIp() {
+        try {
+            // 获取当前请求的HttpServletRequest
+            org.springframework.web.context.request.ServletRequestAttributes attributes = 
+                (org.springframework.web.context.request.ServletRequestAttributes) 
+                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            
+            if (attributes != null) {
+                javax.servlet.http.HttpServletRequest request = attributes.getRequest();
+                String ip = request.getHeader("X-Forwarded-For");
+                if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                    ip = request.getHeader("Proxy-Client-IP");
+                }
+                if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                    ip = request.getHeader("WL-Proxy-Client-IP");
+                }
+                if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                    ip = request.getRemoteAddr();
+                }
+                // 对于多级代理，取第一个IP
+                if (ip != null && ip.contains(",")) {
+                    ip = ip.substring(0, ip.indexOf(",")).trim();
+                }
+                return ip;
+            }
+        } catch (Exception e) {
+            log.warn("获取客户端IP失败", e);
+        }
+        return "unknown";
     }
 }

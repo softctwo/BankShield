@@ -82,7 +82,13 @@ public class SmoothKeyRotationServiceImpl implements SmoothKeyRotationService {
                 return Result.error(400, "该密钥已有活跃的轮换计划");
             }
             
-            // 2. 生成新密钥
+            // 2. 生成新密钥 - 修复参数匹配问题
+            String newKeyName = oldKey.getKeyName() + "_rotated_" + System.currentTimeMillis();
+            String newKeyDescription = "通过轮换生成的密钥，原密钥ID: " + oldKeyId;
+            Integer expireDays = 90;
+            Integer rotationCycle = null; // 使用默认值
+            String createdBy = "SYSTEM";
+            
             // 将String类型转换为枚举类型
             KeyType keyType;
             KeyUsage keyUsage;
@@ -96,20 +102,17 @@ public class SmoothKeyRotationServiceImpl implements SmoothKeyRotationService {
             }
             
             // 调用generateKey方法，使用正确的参数列表
-            String newKeyName = oldKey.getKeyName() + "_rotated_" + System.currentTimeMillis();
-            String newKeyDescription = "通过轮换生成的密钥，原密钥ID: " + oldKeyId;
-            Integer rotationCycle = null; // 轮换周期使用默认值
-            
             Result<EncryptionKey> newKeyResult = keyManagementService.generateKey(
-                newKeyName,
-                keyType,
-                keyUsage,
-                oldKey.getKeyLength(),
-                Integer.valueOf(90),  // expireDays
-                rotationCycle,
-                newKeyDescription,
-                "SYSTEM"
+                newKeyName,                    // String keyName
+                keyType,                       // KeyType keyType  
+                keyUsage,                       // KeyUsage keyUsage
+                oldKey.getKeyLength(),            // Integer keyLength
+                expireDays,                     // Integer expireDays
+                rotationCycle,                   // Integer rotationCycle
+                newKeyDescription,               // String description
+                createdBy                        // String createdBy
             );
+            
             if (!newKeyResult.isSuccess()) {
                 return Result.error(500, "新密钥生成失败: " + newKeyResult.getMessage());
             }

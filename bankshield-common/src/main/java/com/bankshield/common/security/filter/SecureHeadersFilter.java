@@ -52,14 +52,21 @@ public class SecureHeadersFilter extends OncePerRequestFilter {
         
         // 内容安全策略
         String cspPolicy = "default-src 'self'; " +
-                          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " +
+                          "script-src 'self' https://cdn.jsdelivr.net; " +
                           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                           "font-src 'self' https://fonts.gstatic.com; " +
                           "img-src 'self' data: https:; " +
                           "connect-src 'self' ws: wss:; " +
                           "frame-ancestors 'none'; " +
                           "base-uri 'self'; " +
-                          "form-action 'self';";
+                          "form-action 'self'; " +
+                          "object-src 'none'; " + // 防止插件执行
+                          "media-src 'self'; " +
+                          "child-src 'none'; " +
+                          "worker-src 'none'; " +
+                          "frame-src 'none'; " +
+                          "manifest-src 'self'; " +
+                          "upgrade-insecure-requests;"; // 强制HTTPS
         response.setHeader("Content-Security-Policy", cspPolicy);
         
         // 引用策略

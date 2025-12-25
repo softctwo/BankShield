@@ -1,5 +1,6 @@
 package com.bankshield.api.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -33,6 +34,37 @@ public class AsyncConfig implements AsyncConfigurer {
         
         // 线程名称前缀
         executor.setThreadNamePrefix("BankShield-Async-");
+        
+        // 拒绝策略：使用调用者线程执行，避免任务丢失
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        
+        // 优雅关闭
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 角色检查专用线程池
+     * 用于执行角色互斥检查任务，防止无限制创建线程导致OOM
+     */
+    @Bean("roleCheckExecutor")
+    public ThreadPoolTaskExecutor roleCheckExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        
+        // 核心线程数：5
+        executor.setCorePoolSize(5);
+        
+        // 最大线程数：20
+        executor.setMaxPoolSize(20);
+        
+        // 队列容量：100
+        executor.setQueueCapacity(100);
+        
+        // 线程名称前缀
+        executor.setThreadNamePrefix("role-check-");
         
         // 拒绝策略：使用调用者线程执行，避免任务丢失
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());

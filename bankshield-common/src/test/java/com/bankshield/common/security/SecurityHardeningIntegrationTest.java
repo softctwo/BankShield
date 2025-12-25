@@ -6,6 +6,8 @@ import com.bankshield.common.security.ratelimit.AdvancedRateLimiter;
 import com.bankshield.common.security.signature.ApiSignatureVerifier;
 import com.bankshield.common.security.audit.SecurityEventLogger;
 import com.bankshield.common.security.incident.SecurityIncidentResponder;
+import com.bankshield.common.security.compliance.SecurityBaselineChecker.Severity;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version 1.0.0
  */
 @ExtendWith(SpringExtension.class)
+@Slf4j
 @SpringBootTest(classes = {SecurityTestApplication.class})
 @TestPropertySource(properties = {
     "bankshield.security.enabled=true",

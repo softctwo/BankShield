@@ -2,11 +2,13 @@ package com.bankshield.api.controller;
 
 import com.bankshield.api.service.SecureKeyManagementService;
 import com.bankshield.common.result.Result;
+// import com.bankshield.common.security.AuthoritiesConstants;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -26,9 +28,11 @@ public class VaultController {
     
     /**
      * 检查Vault连接状态
+     * 需要管理员权限才能访问Vault状态信息
      */
     @GetMapping("/status")
-    @ApiOperation(value = "检查Vault状态", notes = "检查与HashiCorp Vault的连接状态")
+    @ApiOperation(value = "检查Vault状态", notes = "检查与HashiCorp Vault的连接状态 - 需要管理员权限")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('VAULT_ACCESS')")
     public Result<Map<String, Object>> checkVaultStatus() {
         try {
             log.info("Checking Vault connection status");
@@ -41,9 +45,11 @@ public class VaultController {
     
     /**
      * 生成新的加密密钥
+     * 只有管理员角色才能生成新的加密密钥，遵循最小权限原则
      */
     @PostMapping("/key/generate")
-    @ApiOperation(value = "生成加密密钥", notes = "使用Vault管理的主密钥生成新的加密密钥")
+    @ApiOperation(value = "生成加密密钥", notes = "使用Vault管理的主密钥生成新的加密密钥 - 需要管理员权限")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SECURITY_ADMIN')")
     public Result<String> generateEncryptionKey(
             @ApiParam(value = "加密算法", required = true, example = "SM4")
             @RequestParam String algorithm,
@@ -60,9 +66,11 @@ public class VaultController {
     
     /**
      * 解密密钥材料
+     * 需要特定的解密权限才能执行此敏感操作
      */
     @PostMapping("/key/decrypt")
-    @ApiOperation(value = "解密密钥", notes = "使用Vault管理的主密钥解密密钥材料")
+    @ApiOperation(value = "解密密钥", notes = "使用Vault管理的主密钥解密密钥材料 - 需要解密权限")
+    @PreAuthorize("hasAuthority('DECRYPT') or hasRole('ADMIN') or hasRole('SECURITY_ADMIN')")
     public Result<String> decryptKeyMaterial(
             @ApiParam(value = "加密的密钥材料", required = true)
             @RequestBody Map<String, String> request) {

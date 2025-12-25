@@ -12,6 +12,7 @@ import com.bankshield.common.result.ResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -245,6 +246,24 @@ public class RoleCheckServiceImpl implements RoleCheckService {
             log.info("角色互斥检查任务执行完成");
         } catch (Exception e) {
             log.error("执行角色互斥检查任务时发生异常", e);
+        }
+    }
+
+    /**
+     * 异步执行角色互斥检查任务
+     * 使用线程池管理，防止OOM
+     */
+    @Override
+    @Async("roleCheckExecutor")
+    public void executeRoleCheckJobAsync() {
+        log.info("开始异步执行角色互斥检查任务");
+        
+        try {
+            executeRoleCheckJob();
+            log.info("异步角色互斥检查任务执行完成");
+        } catch (Exception e) {
+            log.error("异步执行角色互斥检查任务时发生异常", e);
+            // 异常信息会被记录，但不会影响调用方
         }
     }
 

@@ -16,9 +16,9 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
-      username: root
-      password: 123456
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/bankshield?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=${DB_SSL:true}&serverTimezone=GMT%2B8
+      username: ${DB_USERNAME:root}
+      password: ${DB_PASSWORD:123456}
       initial-size: 10
       max-active: 100
       min-idle: 10
@@ -32,10 +32,10 @@ spring:
       test-on-borrow: false
       test-on-return: false
       stat-view-servlet:
-        enabled: true
+        enabled: ${DRUID_ENABLED:false}
         url-pattern: /druid/*
-        login-username: admin
-        login-password: admin
+        login-username: ${DRUID_USERNAME:}
+        login-password: ${DRUID_PASSWORD:}
       filter:
         stat:
           log-slow-sql: true
@@ -43,7 +43,7 @@ spring:
           merge-sql: false
         wall:
           config:
-            multi-statement-allow: true
+            multi-statement-allow: false
 
 # MyBatis Plus配置
 mybatis-plus:
@@ -72,9 +72,9 @@ mybatis-plus:
 # 日志配置
 logging:
   level:
-    com.bankshield: debug
+    com.bankshield: ${LOG_LEVEL:info}
     org.springframework.web: info
-    org.mybatis: debug
+    org.mybatis: warn
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -141,11 +141,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: ${ACTUATOR_ENDPOINTS:health,info,metrics,prometheus}
       base-path: "/actuator"
   endpoint:
     health:
-      show-details: always
+      show-details: ${ACTUATOR_HEALTH_DETAILS:when-authorized}
     metrics:
       enabled: true
     prometheus:
@@ -156,17 +156,7 @@ management:
         enabled: true
     tags:
       application: ${spring.application.name}
-      environment: production
-
-# 监控配置
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    health:
-      show-details: always
+      environment: ${ENVIRONMENT:production}
 
 # 线程池配置
 async:

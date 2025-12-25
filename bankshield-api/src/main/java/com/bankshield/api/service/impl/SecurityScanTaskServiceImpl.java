@@ -1,12 +1,14 @@
 package com.bankshield.api.service.impl;
 
 import com.bankshield.api.entity.SecurityScanResult;
+import com.bankshield.api.entity.SecurityScanLog;
 import com.bankshield.api.entity.SecurityScanTask;
 import com.bankshield.api.enums.ScanStatus;
 import com.bankshield.api.enums.ScanType;
 import com.bankshield.api.mapper.SecurityScanResultMapper;
 import com.bankshield.api.mapper.SecurityScanTaskMapper;
 import com.bankshield.api.service.SecurityScanEngine;
+import com.bankshield.api.service.SecurityScanLogService;
 import com.bankshield.api.service.SecurityScanTaskService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -42,8 +44,9 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
     @Autowired
     private SecurityScanEngine scanEngine;
 
-    // 任务执行日志存储
-    private final Map<Long, List<String>> taskExecutionLogs = new HashMap<>();
+    // 任务执行日志服务（线程安全，持久化到数据库）
+    @Autowired
+    private SecurityScanLogService scanLogService;
 
     @Override
     @Transactional
@@ -80,7 +83,7 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
         
         try {
             // 记录执行日志
-            addTaskLog(taskId, "开始执行扫描任务: " + task.getTaskName());
+            scanLogService.info(taskId, "开始执行扫描任务: " + task.getTaskName());
             
             // 更新任务状态为运行中
             updateTaskStatus(taskId, ScanStatus.RUNNING.name(), 0, null);
@@ -96,10 +99,10 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
             if (!results.isEmpty()) {
                 saveScanResults(results);
                 task.setRiskCount(results.size());
-                addTaskLog(taskId, "扫描完成，发现 " + results.size() + " 个风险");
+                scanLogService.info(taskId, "扫描完成，发现 " + results.size() + " 个风险");
             } else {
                 task.setRiskCount(0);
-                addTaskLog(taskId, "扫描完成，未发现风险");
+                scanLogService.info(taskId, "扫描完成，未发现风险");
             }
             
             // 生成扫描报告
@@ -113,7 +116,7 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
             task.setUpdateTime(LocalDateTime.now());
             scanTaskMapper.updateById(task);
             
-            addTaskLog(taskId, "扫描任务执行成功");
+            scanLogService.info(taskId, "扫描任务执行成功");
             
         } catch (Exception e) {
             log.error("扫描任务执行失败: " + taskId, e);
@@ -125,7 +128,7 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
             task.setUpdateTime(LocalDateTime.now());
             scanTaskMapper.updateById(task);
             
-            addTaskLog(taskId, "扫描任务执行失败: " + e.getMessage());
+            scanLogService.error(taskId, "扫描任务执行失败: " + e.getMessage());
         }
     }
 
@@ -147,7 +150,7 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
         task.setUpdateTime(LocalDateTime.now());
         scanTaskMapper.updateById(task);
         
-        addTaskLog(taskId, "扫描任务已停止");
+        scanLogService.warn(taskId, "扫描任务已停止");
     }
 
     @Override
@@ -288,8 +291,8 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
             // 删除任务
             int result = scanTaskMapper.deleteById(taskId);
             
-            // 清理执行日志
-            taskExecutionLogs.remove(taskId);
+            // 清理执行日志（通过服务删除数据库中的日志）
+            scanLogService.deleteTaskLogs(taskId);
             
             log.info("扫描任务删除成功: {}", taskId);
             return result > 0;
@@ -330,8 +333,7 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
 
     @Override
     public List<String> getTaskExecutionLog(Long taskId) {
-        List<String> logs = taskExecutionLogs.get(taskId);
-        return logs != null ? new ArrayList<>(logs) : new ArrayList<>();
+        return scanLogService.getTaskLogContents(taskId);
     }
 
     @Override
@@ -389,19 +391,19 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
         
         switch (scanType) {
             case VULNERABILITY:
-                addTaskLog(task.getId(), "开始漏洞扫描");
+                scanLogService.info(task.getId(), "开始漏洞扫描");
                 return scanEngine.performVulnerabilityScan(task);
                 
             case CONFIG:
-                addTaskLog(task.getId(), "开始配置检查");
+                scanLogService.info(task.getId(), "开始配置检查");
                 return scanEngine.performConfigCheck(task);
                 
             case WEAK_PASSWORD:
-                addTaskLog(task.getId(), "开始弱密码检测");
+                scanLogService.info(task.getId(), "开始弱密码检测");
                 return scanEngine.performWeakPasswordCheck(task);
                 
             case ANOMALY:
-                addTaskLog(task.getId(), "开始异常行为检测");
+                scanLogService.info(task.getId(), "开始异常行为检测");
                 return scanEngine.performAnomalyDetection(task);
                 
             default:
@@ -485,10 +487,5 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
         return filePath;
     }
 
-    private void addTaskLog(Long taskId, String message) {
-        taskExecutionLogs.computeIfAbsent(taskId, k -> new ArrayList<>())
-            .add(String.format("[%s] %s", 
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), 
-                message));
-    }
+
 }

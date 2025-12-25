@@ -40,11 +40,11 @@
             <artifactId>spring-boot-starter-quartz</artifactId>
         </dependency>
         
-        <!-- Druid SQL Parser -->
+        <!-- JSqlParser - SQL解析库 -->
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
-            <version>1.2.20</version>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>4.8</version>
         </dependency>
         
         <!-- Spring Boot Starter Test -->

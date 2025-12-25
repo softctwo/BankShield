@@ -101,4 +101,12 @@ public class SecurityHardeningAutoConfiguration {
     public SecurityHardeningConfig securityHardeningConfig() {
         return new SecurityHardeningConfig();
     }
+
+    /**
+     * 方法级安全配置
+     */
+    @Bean
+    public MethodSecurityConfig methodSecurityConfig() {
+        return new MethodSecurityConfig();
+    }
 }

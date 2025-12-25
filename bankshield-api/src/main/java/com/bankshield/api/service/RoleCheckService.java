@@ -99,6 +99,12 @@ public interface RoleCheckService {
     void executeRoleCheckJob();
 
     /**
+     * 异步执行角色互斥检查任务
+     * 使用线程池管理，防止OOM
+     */
+    void executeRoleCheckJobAsync();
+
+    /**
      * 获取系统三权分立状态
      * 
      * @return 状态信息

@@ -47,35 +47,51 @@ public class AntiBrushFilter extends AbstractGatewayFilterFactory<AntiBrushFilte
             public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
                 ServerHttpRequest request = exchange.getRequest();
                 ServerHttpResponse response = exchange.getResponse();
-                
+
                 // 获取客户端IP
                 String clientIp = getClientIp(request);
-                
+
                 // 检查IP是否在黑名单中
                 if (blacklistService.isBlacklisted(clientIp)) {
                     log.warn("防刷过滤器检测到黑名单IP: {}", clientIp);
                     response.setStatusCode(HttpStatus.FORBIDDEN);
                     return response.setComplete();
                 }
-                
+
                 // 获取请求路径
                 String requestPath = request.getURI().getPath();
-                
+
                 // 检测异常请求模式
                 if (isSuspiciousRequest(clientIp, requestPath, config)) {
                     log.warn("检测到异常请求模式，IP: {}, 路径: {}", clientIp, requestPath);
-                    
+
                     // 自动加入黑名单
                     blacklistService.addToBlacklist(clientIp, "异常请求模式检测", config.getBlockDuration(), "SYSTEM");
-                    
+
                     response.setStatusCode(HttpStatus.FORBIDDEN);
                     return response.setComplete();
                 }
-                
-                // 记录请求信息
-                recordRequest(clientIp, requestPath);
-                
-                return chain.filter(exchange);
+
+                // 记录请求信息（在过滤器链执行前后都需要记录）
+                recordRequest(clientIp, requestPath, false);
+
+                // 执行过滤器链并监控响应
+                return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+                    // 检查响应状态码，判断是否有错误
+                    boolean isError = response.getStatusCode() != null &&
+                        (response.getStatusCode().is5xxServerError() ||
+                         response.getStatusCode().is4xxClientError());
+                    // 记录错误请求
+                    if (isError) {
+                        recordRequest(clientIp, requestPath, true);
+                    }
+                })).onErrorResume(throwable -> {
+                    // 发生异常时记录错误请求
+                    log.error("请求处理异常，IP: {}, 路径: {}, 错误: {}", clientIp, requestPath, throwable.getMessage());
+                    recordRequest(clientIp, requestPath, true);
+                    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+                    return response.setComplete();
+                });
             }
         };
     }
@@ -121,14 +137,19 @@ public class AntiBrushFilter extends AbstractGatewayFilterFactory<AntiBrushFilte
     
     /**
      * 记录请求信息
-     * 
+     *
      * @param clientIp 客户端IP
      * @param requestPath 请求路径
+     * @param isError 是否为错误请求
      */
-    private void recordRequest(String clientIp, String requestPath) {
+    private void recordRequest(String clientIp, String requestPath, boolean isError) {
         RequestCounter counter = requestCounters.computeIfAbsent(clientIp, k -> new RequestCounter());
         counter.recordRequest(requestPath);
-        
+
+        // 同时更新可疑IP检测器
+        SuspiciousDetector detector = suspiciousDetectors.computeIfAbsent(clientIp, k -> new SuspiciousDetector());
+        detector.recordRequest(requestPath, isError);
+
         // 清理过期的计数器
         cleanupExpiredCounters();
     }

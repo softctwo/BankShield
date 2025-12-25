@@ -4,6 +4,8 @@ import com.bankshield.api.entity.User;
 import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import java.util.Map;
+
 /**
  * 用户服务接口
  * 
@@ -56,10 +58,10 @@ public interface UserService {
 
     /**
      * 用户登录
-     * 
+     *
      * @param username 用户名
      * @param password 密码
-     * @return 登录结果
+     * @return 登录结果（包含JWT token和用户信息）
      */
-    Result<String> login(String username, String password);
+    Result<Map<String, Object>> login(String username, String password);
 }

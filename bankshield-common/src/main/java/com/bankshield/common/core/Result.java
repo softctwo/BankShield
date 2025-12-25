@@ -91,4 +91,27 @@ public class Result<T> implements Serializable {
         this.success = false;
         return this;
     }
+
+    /**
+     * 成功响应 (兼容旧接口)
+     */
+    public static <T> Result<T> success() {
+        Result<T> r = new Result<T>();
+        r.setSuccess(true);
+        r.setCode(200);
+        r.setMessage("成功");
+        return r;
+    }
+
+    /**
+     * 成功响应，带数据 (兼容旧接口)
+     */
+    public static <T> Result<T> success(T data) {
+        Result<T> r = new Result<T>();
+        r.setSuccess(true);
+        r.setCode(200);
+        r.setResult(data);
+        r.setMessage("成功");
+        return r;
+    }
 }

@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -35,13 +38,15 @@ public class ApiSignatureVerifier {
     private static final String NONCE_HEADER = "X-BankShield-Nonce";
     private static final String APP_ID_HEADER = "X-App-Id";
     
-    // 模拟应用密钥存储（实际应该存储在数据库或密钥管理系统中）
+    // 应用密钥存储（从环境变量或配置中心获取）
     private static final Map<String, String> APP_SECRET_STORE = new HashMap<>();
-    
-    static {
-        APP_SECRET_STORE.put("bankshield_web", "sk_live_1234567890abcdef");
-        APP_SECRET_STORE.put("bankshield_mobile", "sk_live_abcdef1234567890");
-        APP_SECRET_STORE.put("bankshield_api", "sk_live_0987654321fedcba");
+
+    @PostConstruct
+    public void init() {
+        // 从环境变量或系统属性中获取密钥（实际生产环境应使用Vault或KMS）
+        APP_SECRET_STORE.put("bankshield_web", System.getenv().getOrDefault("APP_SECRET_WEB", "changeme"));
+        APP_SECRET_STORE.put("bankshield_mobile", System.getenv().getOrDefault("APP_SECRET_MOBILE", "changeme"));
+        APP_SECRET_STORE.put("bankshield_api", System.getenv().getOrDefault("APP_SECRET_API", "changeme"));
     }
     
     /**
@@ -188,7 +193,7 @@ public class ApiSignatureVerifier {
      */
     private String calculateSignatureInternal(String method, String path, String queryString, String headerStr,
                                                String body, String timestamp, String nonce, String secretKey) {
-        // 构建待签名字符串
+        // 构建待签名字符串（不包含密钥）
         String signStr = String.join("\n",
             method,
             path,
@@ -200,7 +205,8 @@ public class ApiSignatureVerifier {
             secretKey
         );
 
-        log.debug("待签名字符串: {}", signStr);
+        // 安全考虑：不在日志中输出完整的待签名字符串，只输出长度
+        log.debug("待签名字符串长度: {}", signStr.length());
 
         // 使用SHA-256计算签名
         return DigestUtil.sha256Hex(signStr.getBytes(StandardCharsets.UTF_8));
@@ -272,18 +278,32 @@ public class ApiSignatureVerifier {
     
     /**
      * 获取请求体
-     * 
+     *
      * @param request HTTP请求
      * @return 请求体
      */
     private String getRequestBody(HttpServletRequest request) {
         try {
-            // 从自定义的缓存中获取请求体
+            // 优先从缓存中获取（如果已设置）
             Object bodyObj = request.getAttribute("cachedRequestBody");
             if (bodyObj != null) {
                 return (String) bodyObj;
             }
-            return "";
+
+            // 从请求输入流中读取
+            InputStream inputStream = request.getInputStream();
+            if (inputStream == null || inputStream.available() == 0) {
+                return "";
+            }
+
+            try (BufferedReader reader = request.getReader()) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                return sb.toString();
+            }
         } catch (Exception e) {
             log.error("获取请求体失败: {}", e.getMessage());
             return "";

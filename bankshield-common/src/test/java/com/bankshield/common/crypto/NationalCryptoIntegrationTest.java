@@ -5,6 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.security.PublicKey;
+import java.security.PrivateKey;
+import java.security.KeyPair;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -107,7 +111,7 @@ public class NationalCryptoIntegrationTest {
     @Test
     public void testSM2KeyPairOperations() {
         // 生成新的密钥对
-        var keyPair = cryptoManager.generateNewSm2KeyPair();
+        KeyPair keyPair = cryptoManager.generateNewSm2KeyPair();
         assertNotNull(keyPair, "新生成的密钥对不应该为null");
         assertNotNull(keyPair.getPublic(), "公钥不应该为null");
         assertNotNull(keyPair.getPrivate(), "私钥不应该为null");
@@ -120,8 +124,8 @@ public class NationalCryptoIntegrationTest {
         assertNotNull(privateKeyStr, "私钥字符串不应该为null");
         
         // 测试密钥还原
-        var restoredPublicKey = SM2Util.stringToPublicKey(publicKeyStr);
-        var restoredPrivateKey = SM2Util.stringToPrivateKey(privateKeyStr);
+        PublicKey restoredPublicKey = SM2Util.stringToPublicKey(publicKeyStr);
+        PrivateKey restoredPrivateKey = SM2Util.stringToPrivateKey(privateKeyStr);
         
         assertEquals(keyPair.getPublic(), restoredPublicKey, "还原的公钥应该与原始公钥相同");
         assertEquals(keyPair.getPrivate(), restoredPrivateKey, "还原的私钥应该与原始私钥相同");

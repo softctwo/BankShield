@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -18,6 +19,7 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 加解密工具类
@@ -37,6 +39,7 @@ public class EncryptUtil {
     // BCryptPasswordEncoder实例，单例使用避免重复创建开销
     private static final BCryptPasswordEncoder BCRYPT_ENCODER = new BCryptPasswordEncoder();
 
+    private static final String HMAC_SHA256_ALGORITHM = "HmacSHA256";
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -178,6 +181,44 @@ public class EncryptUtil {
             return BCRYPT_ENCODER.matches(plainText, hashedText);
         } catch (Exception e) {
             log.error("BCrypt校验失败: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * HMAC-SHA256签名
+     *
+     * @param secretKey 密钥
+     * @param data 待签名数据
+     * @return Base64编码的签名结果
+     */
+    public static String hmacSha256(String secretKey, String data) {
+        try {
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), HMAC_SHA256_ALGORITHM);
+            Mac mac = Mac.getInstance(HMAC_SHA256_ALGORITHM);
+            mac.init(secretKeySpec);
+            byte[] rawHmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(rawHmac);
+        } catch (Exception e) {
+            log.error("HMAC-SHA256签名失败: {}", e.getMessage());
+            throw new RuntimeException("HMAC-SHA256签名失败", e);
+        }
+    }
+
+    /**
+     * HMAC-SHA256签名验证
+     *
+     * @param secretKey 密钥
+     * @param data 待签名数据
+     * @param signature 待验证签名
+     * @return 签名是否匹配
+     */
+    public static boolean verifyHmacSha256(String secretKey, String data, String signature) {
+        try {
+            String calculatedSignature = hmacSha256(secretKey, data);
+            return calculatedSignature.equals(signature);
+        } catch (Exception e) {
+            log.error("HMAC-SHA256签名验证失败: {}", e.getMessage());
             return false;
         }
     }

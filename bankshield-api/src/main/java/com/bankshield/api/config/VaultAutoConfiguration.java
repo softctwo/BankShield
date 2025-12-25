@@ -12,6 +12,7 @@ import org.springframework.vault.authentication.AppRoleAuthenticationOptions;
 import org.springframework.vault.client.VaultEndpoint;
 import org.springframework.vault.core.VaultOperations;
 import org.springframework.vault.core.VaultTemplate;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * Vault自动配置类
@@ -42,8 +43,11 @@ public class VaultAutoConfiguration {
     }
     
     @Bean
-    public AppRoleAuthentication vaultAuthentication() {
+    public AppRoleAuthentication vaultAuthentication(VaultEndpoint endpoint) {
         try {
+            // 创建RestTemplate
+            RestTemplate restTemplate = new RestTemplate();
+
             AppRoleAuthenticationOptions options = AppRoleAuthenticationOptions.builder()
                     .roleId(vaultConfig.getRoleId())
                     .secretId(vaultConfig.getSecretId())
@@ -52,9 +56,8 @@ public class VaultAutoConfiguration {
             log.info("Vault AppRole authentication configured with roleId: {}",
                     vaultConfig.getRoleId() != null ? vaultConfig.getRoleId().substring(0, Math.min(8, vaultConfig.getRoleId().length())) + "..." : "null");
 
-            // TODO: 需要提供 RestOperations 参数
-            // 暂时返回 null，实际使用时需要完善
-            return null;
+            // 注意：这是一个简化的实现，实际生产环境中需要更完善的配置
+            return new AppRoleAuthentication(options, restTemplate);
         } catch (Exception e) {
             log.error("Failed to configure Vault authentication", e);
             throw new RuntimeException("Vault authentication configuration failed", e);

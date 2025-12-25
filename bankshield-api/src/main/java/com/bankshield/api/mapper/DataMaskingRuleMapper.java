@@ -48,6 +48,9 @@ public interface DataMaskingRuleMapper extends BaseMapper<DataMaskingRule> {
      * @param excludeId 排除的ID（更新时使用）
      * @return 是否存在
      */
-    @Select("SELECT COUNT(*) FROM masking_rule WHERE rule_name = #{ruleName} AND #{excludeId} != id")
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM masking_rule WHERE rule_name = #{ruleName} " +
+            "<if test='excludeId != null'>AND #{excludeId} != id</if>" +
+            "</script>")
     int countByRuleName(@Param("ruleName") String ruleName, @Param("excludeId") Long excludeId);
 }

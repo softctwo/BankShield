@@ -9,6 +9,8 @@ import com.bankshield.api.mapper.DataSourceMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -18,14 +20,20 @@ import java.util.stream.Collectors;
  * 数据地图服务
  * 生成和管理数据地图，提供数据资产的可视化展示
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class DataMapService {
+
+    private static final Logger log = LoggerFactory.getLogger(DataMapService.class);
 
     private final DataMapMapper dataMapMapper;
     private final DataFlowMapper dataFlowMapper;
     private final DataSourceMapper dataSourceMapper;
+
+    public DataMapService(DataMapMapper dataMapMapper, DataFlowMapper dataFlowMapper, DataSourceMapper dataSourceMapper) {
+        this.dataMapMapper = dataMapMapper;
+        this.dataFlowMapper = dataFlowMapper;
+        this.dataSourceMapper = dataSourceMapper;
+    }
 
     /**
      * 生成全局数据地图

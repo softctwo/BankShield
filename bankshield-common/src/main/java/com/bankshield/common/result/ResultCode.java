@@ -49,6 +49,8 @@ public enum ResultCode {
     ROLE_VIOLATION_HANDLE_ERROR(1108, "违规处理失败"),
     ROLE_VIOLATION_QUERY_ERROR(1109, "违规查询失败"),
     ROLE_MUTEX_QUERY_ERROR(1110, "互斥规则查询失败"),
+    ROLE_ASSIGN_ERROR(1111, "角色分配失败"),
+    ROLE_ALREADY_ASSIGNED(1112, "用户已拥有该角色"),
     
     // 部门相关错误 1200-1299
     DEPT_NOT_FOUND(1201, "部门不存在"),

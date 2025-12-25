@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -41,6 +42,7 @@ public class WatermarkController {
     /**
      * 分页查询水印模板
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('AUDITOR')")
     @GetMapping("/template/page")
     public Result<IPage<WatermarkTemplate>> getTemplatePage(
             @RequestParam(defaultValue = "1") int page,
@@ -57,6 +59,7 @@ public class WatermarkController {
     /**
      * 创建水印模板
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/template")
     public Result<WatermarkTemplate> createTemplate(@RequestBody WatermarkTemplate template) {
         log.info("创建水印模板，模板名称: {}", template.getTemplateName());
@@ -66,6 +69,7 @@ public class WatermarkController {
     /**
      * 更新水印模板
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/template")
     public Result<WatermarkTemplate> updateTemplate(@RequestBody WatermarkTemplate template) {
         log.info("更新水印模板，ID: {}", template.getId());
@@ -75,6 +79,7 @@ public class WatermarkController {
     /**
      * 删除水印模板
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/template/{id}")
     public Result<Boolean> deleteTemplate(@PathVariable Long id) {
         log.info("删除水印模板，ID: {}", id);
@@ -84,6 +89,7 @@ public class WatermarkController {
     /**
      * 创建水印任务
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PostMapping("/task")
     public Result<WatermarkTask> createTask(@RequestBody WatermarkTask task) {
         log.info("创建水印任务，任务名称: {}", task.getTaskName());
@@ -93,6 +99,7 @@ public class WatermarkController {
     /**
      * 查询任务状态
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('AUDITOR')")
     @GetMapping("/task/{id}")
     public Result<WatermarkTask> getTaskById(@PathVariable Long id) {
         log.info("查询水印任务状态，ID: {}", id);
@@ -102,6 +109,7 @@ public class WatermarkController {
     /**
      * 获取任务进度
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('AUDITOR')")
     @GetMapping("/task/{id}/progress")
     public Result<Integer> getTaskProgress(@PathVariable Long id) {
         log.info("获取水印任务进度，ID: {}", id);
@@ -111,6 +119,7 @@ public class WatermarkController {
     /**
      * 提取水印
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PostMapping("/extract")
     public Result<WatermarkExtractLog> extractWatermark(@RequestParam("file") MultipartFile file,
                                                        @RequestParam("operator") String operator) {
@@ -121,6 +130,7 @@ public class WatermarkController {
     /**
      * 分页查询提取日志
      */
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUDITOR')")
     @GetMapping("/extract/log/page")
     public Result<IPage<WatermarkExtractLog>> getExtractLogPage(
             @RequestParam(defaultValue = "1") int page,
@@ -139,6 +149,7 @@ public class WatermarkController {
     /**
      * 批量提取水印
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PostMapping("/extract/batch")
     public Result<?> batchExtractWatermark(@RequestParam("files") MultipartFile[] files,
                                           @RequestParam("operator") String operator) {
@@ -149,6 +160,7 @@ public class WatermarkController {
     /**
      * 验证文件是否包含水印
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PostMapping("/extract/verify")
     public Result<Boolean> verifyWatermark(@RequestParam("file") MultipartFile file) {
         log.info("验证文件是否包含水印，文件名: {}", file.getOriginalFilename());
@@ -158,6 +170,7 @@ public class WatermarkController {
     /**
      * 获取提取统计信息
      */
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUDITOR')")
     @GetMapping("/extract/statistics")
     public Result<?> getExtractStatistics(@RequestParam(defaultValue = "7") int days) {
         log.info("获取水印提取统计信息，天数: {}", days);
@@ -167,6 +180,7 @@ public class WatermarkController {
     /**
      * 启用水印模板
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/template/{id}/enable")
     public Result<Boolean> enableTemplate(@PathVariable Long id, @RequestParam Integer enabled) {
         log.info("启用水印模板，ID: {}, 启用状态: {}", id, enabled);
@@ -176,6 +190,7 @@ public class WatermarkController {
     /**
      * 取消任务
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PutMapping("/task/{id}/cancel")
     public Result<Boolean> cancelTask(@PathVariable Long id) {
         log.info("取消水印任务，ID: {}", id);
@@ -185,6 +200,7 @@ public class WatermarkController {
     /**
      * 重试任务
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @PutMapping("/task/{id}/retry")
     public Result<Boolean> retryTask(@PathVariable Long id) {
         log.info("重试水印任务，ID: {}", id);
@@ -194,6 +210,7 @@ public class WatermarkController {
     /**
      * 下载任务结果文件
      */
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @GetMapping("/task/{id}/download")
     public void downloadTaskResult(@PathVariable Long id, HttpServletResponse response) {
         log.info("下载水印任务结果文件，ID: {}", id);

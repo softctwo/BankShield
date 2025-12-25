@@ -1,5 +1,8 @@
 package com.bankshield.common.security;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 /**
  * 安全工具类
  *
@@ -25,8 +28,30 @@ public class SecurityUtils {
      * @return 当前用户ID
      */
     public static Long getCurrentUserId() {
-        // TODO: 实现从 Spring Security Context 获取当前用户ID
-        return 1L;
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+
+            Object principal = authentication.getPrincipal();
+
+            // 如果是字符串类型且为数字，则转换为Long
+            if (principal instanceof String) {
+                try {
+                    return Long.parseLong((String) principal);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+
+            // 如果是自定义的UserDetails对象，需要根据实际情况获取ID
+            // 例如：return ((UserDetails) principal).getUserId();
+
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

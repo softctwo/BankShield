@@ -1,8 +1,11 @@
 package com.bankshield.api.service.impl;
 
 import com.bankshield.api.entity.Role;
+import com.bankshield.common.security.SecurityUtils;
+import com.bankshield.api.entity.UserRole;
 import com.bankshield.api.mapper.RoleMapper;
 import com.bankshield.api.mapper.UserMapper;
+import com.bankshield.api.mapper.UserRoleMapper;
 import com.bankshield.api.service.RoleCheckService;
 import com.bankshield.api.service.RoleService;
 import com.bankshield.common.exception.BusinessException;
@@ -16,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +39,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
     private final RoleMapper roleMapper;
     private final UserMapper userMapper;
+    private final UserRoleMapper userRoleMapper;
     private final RoleCheckService roleCheckService;
 
     @Override
@@ -234,11 +240,35 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 return Result.error(ResultCode.ROLE_MUTEX_CONFLICT, "角色分配违反三权分立原则");
             }
 
-            // TODO: 调用用户角色关联表的Mapper进行角色分配
-            // userRoleMapper.insert(new UserRole(userId, roleId));
-            
-            log.info("角色分配成功：用户ID={}, 角色ID={}", userId, roleId);
-            return Result.success("角色分配成功");
+            // 执行实际的角色分配
+            try {
+                // 检查是否已存在该角色
+                LambdaQueryWrapper<UserRole> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(UserRole::getUserId, userId)
+                           .eq(UserRole::getRoleId, roleId);
+                
+                UserRole existingUserRole = userRoleMapper.selectOne(queryWrapper);
+                if (existingUserRole != null) {
+                    return Result.error(ResultCode.ROLE_ALREADY_ASSIGNED);
+                }
+
+                // 创建用户角色关联
+                UserRole userRole = UserRole.builder()
+                        .userId(userId)
+                        .roleId(roleId)
+                        .createTime(LocalDateTime.now())
+                        .createBy(SecurityUtils.getCurrentUsername())
+                        .build();
+                
+                userRoleMapper.insert(userRole);
+                
+                log.info("角色分配成功：用户ID={}, 角色ID={}", userId, roleId);
+                return Result.success("角色分配成功");
+                
+            } catch (Exception e) {
+                log.error("角色分配数据库操作失败：用户ID={}, 角色ID={}", userId, roleId, e);
+                throw new BusinessException(ResultCode.ROLE_ASSIGN_ERROR, "角色分配失败");
+            }
         } catch (BusinessException e) {
             log.error("角色分配业务异常：{}", e.getMessage());
             return Result.error(e.getCode(), e.getMessage());
@@ -277,15 +307,33 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 }
             }
 
-            // TODO: 批量分配角色
-            // 先删除用户现有角色，再分配新角色
-            // userRoleMapper.deleteByUserId(userId);
-            // for (Long roleId : roleIds) {
-            //     userRoleMapper.insert(new UserRole(userId, roleId));
-            // }
-            
-            log.info("批量角色分配成功：用户ID={}, 角色数量={}", userId, roleIds.size());
-            return Result.success("批量角色分配成功");
+            // 执行批量角色分配
+            try {
+                // 先删除用户现有角色
+                userRoleMapper.deleteByUserId(userId);
+                
+                // 批量分配新角色
+                String currentUsername = SecurityUtils.getCurrentUsername();
+                LocalDateTime now = LocalDateTime.now();
+                
+                for (Long roleId : roleIds) {
+                    UserRole userRole = UserRole.builder()
+                            .userId(userId)
+                            .roleId(roleId)
+                            .createTime(now)
+                            .createBy(currentUsername)
+                            .build();
+                    
+                    userRoleMapper.insert(userRole);
+                }
+                
+                log.info("批量角色分配成功：用户ID={}, 角色数量={}", userId, roleIds.size());
+                return Result.success("批量角色分配成功");
+                
+            } catch (Exception e) {
+                log.error("批量角色分配数据库操作失败：用户ID={}, 角色数量={}", userId, roleIds.size(), e);
+                throw new BusinessException(ResultCode.ROLE_ASSIGN_ERROR, "批量角色分配失败");
+            }
         } catch (BusinessException e) {
             log.error("批量角色分配业务异常：{}", e.getMessage());
             return Result.error(e.getCode(), e.getMessage());

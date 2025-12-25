@@ -30,19 +30,19 @@ public class MockConfig {
     public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> redisTemplate = mock(RedisTemplate.class);
         ValueOperations<String, Object> valueOperations = mock(ValueOperations.class);
-        
+
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.set(anyString(), any())).thenReturn(true);
-        when(valueOperations.set(anyString(), any(), anyLong(), any())).thenReturn(true);
+        when(valueOperations.set(anyString(), any(Object.class))).thenReturn(true);
+        when(valueOperations.set(anyString(), any(Object.class), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(valueOperations.get(anyString())).thenReturn(null);
         when(valueOperations.increment(anyString())).thenReturn(1L);
         when(valueOperations.increment(anyString(), anyLong())).thenReturn(1L);
-        
+
         when(redisTemplate.delete(anyString())).thenReturn(true);
         when(redisTemplate.delete(anyList())).thenReturn(1L);
         when(redisTemplate.hasKey(anyString())).thenReturn(false);
-        when(redisTemplate.expire(anyString(), anyLong(), any())).thenReturn(true);
-        
+        when(redisTemplate.expire(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+
         return redisTemplate;
     }
     
@@ -53,7 +53,7 @@ public class MockConfig {
     @Primary
     public FileStorageService fileStorageService() {
         FileStorageService service = mock(FileStorageService.class);
-        when(service.uploadFile(any(), anyString())).thenReturn("/test/file/path");
+        when(service.uploadFile(any(byte[].class), anyString())).thenReturn("/test/file/path");
         when(service.downloadFile(anyString())).thenReturn(new byte[1024]);
         when(service.deleteFile(anyString())).thenReturn(true);
         return service;

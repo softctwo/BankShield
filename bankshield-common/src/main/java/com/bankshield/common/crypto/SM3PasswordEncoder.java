@@ -22,12 +22,27 @@ public class SM3PasswordEncoder implements PasswordEncoder {
      */
     public String encode(CharSequence rawPassword) {
         try {
+            // 空密码验证
+            if (rawPassword == null) {
+                log.error("SM3密码编码失败: 密码为空");
+                throw new IllegalArgumentException("密码不能为空");
+            }
+
+            // 空字符串验证
+            String passwordStr = rawPassword.toString();
+            if (passwordStr.isEmpty()) {
+                log.error("SM3密码编码失败: 密码为空字符串");
+                throw new IllegalArgumentException("密码不能为空字符串");
+            }
+
             // 生成随机盐
             byte[] salt = generateSalt();
             // SM3(盐+密码)
-            String hash = SM3Util.hashWithSalt(rawPassword.toString(), salt);
+            String hash = SM3Util.hashWithSalt(passwordStr, salt);
             // 存储格式：$SM3$salt$hash
             return SALT_PREFIX + Base64.getEncoder().encodeToString(salt) + "$" + hash;
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             log.error("SM3密码编码失败: {}", e.getMessage());
             throw new RuntimeException("SM3密码编码失败", e);
@@ -39,27 +54,36 @@ public class SM3PasswordEncoder implements PasswordEncoder {
      */
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
         try {
+            // 空参数验证
+            if (rawPassword == null) {
+                log.error("SM3密码验证失败: 原始密码为空");
+                return false;
+            }
+
             if (encodedPassword == null || !encodedPassword.startsWith(SALT_PREFIX)) {
                 return false;
             }
-            
+
             // 解析存储格式
             String[] parts = encodedPassword.split("\\$");
             if (parts.length != 3) {
                 return false;
             }
-            
+
             String saltStr = parts[1];
             String expectedHash = parts[2];
-            
+
             // 解码盐
             byte[] salt = Base64.getDecoder().decode(saltStr);
-            
+
             // 计算实际哈希
             String actualHash = SM3Util.hashWithSalt(rawPassword.toString(), salt);
-            
+
             // 比较哈希值
             return expectedHash.equals(actualHash);
+        } catch (IllegalArgumentException e) {
+            log.error("SM3密码验证失败: 参数错误 - {}", e.getMessage());
+            return false;
         } catch (Exception e) {
             log.error("SM3密码验证失败: {}", e.getMessage());
             return false;

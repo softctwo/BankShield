@@ -189,26 +189,74 @@ public class ReportGenerationTaskServiceImpl extends ServiceImpl<ReportGeneratio
     
     private String saveReportFile(byte[] content, String fileName, String fileType) {
         try {
+            // 净化文件名，防止路径穿越攻击
+            String sanitizedFileName = sanitizeFileName(fileName);
+
             // 确保输出目录存在
             File outputDir = new File("reports");
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
-            
+
             // 生成文件路径
             String timestamp = DateUtil.format(LocalDateTime.now(), "yyyyMMdd_HHmmss");
-            String filePath = outputDir.getAbsolutePath() + File.separator + fileName + "_" + timestamp + "." + fileType;
+            String filePath = outputDir.getAbsolutePath() + File.separator + sanitizedFileName + "_" + timestamp + "." + fileType;
 
             // 保存文件 - 使用文件路径
             java.nio.file.Files.write(Paths.get(filePath), content);
 
             log.info("报表文件保存成功: {}", filePath);
             return filePath;
-            
+
         } catch (Exception e) {
             log.error("保存报表文件失败: {}", e.getMessage(), e);
             throw new RuntimeException("保存报表文件失败", e);
         }
+    }
+
+    /**
+     * 净化文件名，防止路径穿越攻击和非法字符
+     *
+     * @param fileName 原始文件名
+     * @return 净化后的文件名
+     */
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "unnamed_file";
+        }
+
+        // 移除路径穿越攻击常见的字符序列
+        fileName = fileName.replace("..", "");
+        fileName = fileName.replace("/", "_");
+        fileName = fileName.replace("\\", "_");
+        fileName = fileName.replace(":", "_");
+        fileName = fileName.replace("*", "_");
+        fileName = fileName.replace("?", "_");
+        fileName = fileName.replace("\"", "_");
+        fileName = fileName.replace("<", "_");
+        fileName = fileName.replace(">", "_");
+        fileName = fileName.replace("|", "_");
+
+        // 移除控制字符（0x00-0x1F）
+        fileName = fileName.replaceAll("[\\x00-\\x1F]", "");
+
+        // 移除不可见字符
+        fileName = fileName.replaceAll("[\\x7F-\\x9F]", "");
+
+        // 限制文件名长度
+        if (fileName.length() > 100) {
+            fileName = fileName.substring(0, 100);
+        }
+
+        // 确保不以点或空格结尾
+        fileName = fileName.replaceAll("[.\\s]+$", "");
+
+        // 如果净化后为空或只剩非法字符，使用默认名称
+        if (fileName.trim().isEmpty()) {
+            return "unnamed_file";
+        }
+
+        return fileName;
     }
     
     @Override
