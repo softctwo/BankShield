@@ -1,5 +1,6 @@
 package com.bankshield.api.controller;
 
+import com.bankshield.api.dto.LoginRequest;
 import com.bankshield.api.entity.User;
 import com.bankshield.api.service.UserService;
 import com.bankshield.common.result.Result;
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 用户管理控制器
- * 
+ *
  * @author BankShield
  */
 @Slf4j
@@ -72,10 +73,11 @@ public class UserController {
 
     /**
      * 用户登录
+     * 使用RequestBody传递密码，避免在URL参数中暴露敏感信息
      */
     @PostMapping("/login")
-    public Result<String> login(@RequestParam String username, @RequestParam String password) {
-        log.info("用户登录，用户名: {}", username);
-        return userService.login(username, password);
+    public Result<String> login(@RequestBody LoginRequest request) {
+        log.info("用户登录，用户名: {}", request.getUsername());
+        return userService.login(request.getUsername(), request.getPassword());
     }
 }

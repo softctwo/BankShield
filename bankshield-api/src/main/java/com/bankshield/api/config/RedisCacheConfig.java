@@ -3,7 +3,8 @@ package com.bankshield.api.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.impl.BasicPolymorphicTypeValidator;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +27,7 @@ import java.util.Map;
 /**
  * Redis缓存配置类
  * 配置多级缓存策略和不同业务的缓存过期时间
- * 
+ *
  * @author BankShield
  */
 @Configuration
@@ -40,14 +41,20 @@ public class RedisCacheConfig {
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-        
+
         // 使用Jackson2JsonRedisSerializer来序列化和反序列化redis的value值
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper om = new ObjectMapper();
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        om.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+
+        // 使用白名单机制限制可反序列化的类型，避免反序列化攻击
+        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        om.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
+
         jackson2JsonRedisSerializer.setObjectMapper(om);
-        
+
         // 配置key和value的序列化方式
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
         template.setKeySerializer(stringRedisSerializer);
@@ -55,7 +62,7 @@ public class RedisCacheConfig {
         template.setValueSerializer(jackson2JsonRedisSerializer);
         template.setHashValueSerializer(jackson2JsonRedisSerializer);
         template.afterPropertiesSet();
-        
+
         return template;
     }
 
@@ -120,7 +127,11 @@ public class RedisCacheConfig {
         public GenericJackson2JsonRedisSerializer() {
             this.objectMapper = new ObjectMapper();
             this.objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-            this.objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+            // 使用白名单机制限制可反序列化的类型，避免反序列化攻击
+            PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+                    .allowIfBaseType(Object.class)
+                    .build();
+            this.objectMapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
         }
 
         @Override
