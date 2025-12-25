@@ -81,6 +81,7 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
      * 生成SM4密钥
      */
     private String generateSM4Key(Integer keyLength) {
+        // SM4固定为128位密钥，不支持其他长度
         if (keyLength != null && keyLength != DEFAULT_SM4_KEY_LENGTH) {
             log.warn("SM4密钥长度必须为128位，忽略指定长度：{}", keyLength);
         }
@@ -95,21 +96,22 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
         if (actualKeyLength != 128 && actualKeyLength != 192 && actualKeyLength != 256) {
             throw new IllegalArgumentException("AES密钥长度必须是128、192或256位");
         }
-        return EncryptUtil.generateAesKey();
+        return EncryptUtil.generateAesKey(actualKeyLength);
     }
     
     /**
      * 生成SM2密钥对
      */
     private KeyPair generateSM2KeyPair(Integer keyLength) {
+        // SM2固定为256位密钥，不支持其他长度
         if (keyLength != null && keyLength != DEFAULT_SM2_KEY_LENGTH) {
             log.warn("SM2密钥长度必须为256位，忽略指定长度：{}", keyLength);
         }
-        
+
         java.security.KeyPair keyPair = SM2Util.generateKeyPair();
         String publicKey = SM2Util.publicKeyToString(keyPair.getPublic());
         String privateKey = SM2Util.privateKeyToString(keyPair.getPrivate());
-        
+
         return new KeyPair(publicKey, privateKey);
     }
     
@@ -121,12 +123,12 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
         if (actualKeyLength < 1024) {
             throw new IllegalArgumentException("RSA密钥长度必须至少为1024位");
         }
-        
+
         try {
-            java.security.KeyPair keyPair = EncryptUtil.generateRsaKeyPair();
+            java.security.KeyPair keyPair = EncryptUtil.generateRsaKeyPair(actualKeyLength);
             String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
             String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
-            
+
             return new KeyPair(publicKey, privateKey);
         } catch (Exception e) {
             log.error("生成RSA密钥对失败", e);

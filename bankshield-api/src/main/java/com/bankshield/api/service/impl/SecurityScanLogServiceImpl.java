@@ -30,13 +30,13 @@ public class SecurityScanLogServiceImpl extends ServiceImpl<SecurityScanLogMappe
     @Transactional
     public void log(Long taskId, String message, SecurityScanLog.LogLevel logLevel) {
         try {
-            SecurityScanLog log = new SecurityScanLog();
-            log.setTaskId(taskId);
-            log.setLogLevel(logLevel.getValue());
-            log.setMessage(message);
-            log.setCreateTime(LocalDateTime.now());
+            SecurityScanLog scanLog = new SecurityScanLog();
+            scanLog.setTaskId(taskId);
+            scanLog.setLogLevel(logLevel.getValue());
+            scanLog.setMessage(message);
+            scanLog.setCreateTime(LocalDateTime.now());
             
-            scanLogMapper.insert(log);
+            scanLogMapper.insert(scanLog);
             
             // 同时记录到应用日志
             String formattedMessage = String.format("[ScanTask-%d] %s", taskId, message);
@@ -114,11 +114,11 @@ public class SecurityScanLogServiceImpl extends ServiceImpl<SecurityScanLogMappe
         } catch (Exception e) {
             log.error("批量记录扫描日志失败", e);
             // 如果批量插入失败，逐个插入
-            for (SecurityScanLog log : logs) {
+            for (SecurityScanLog scanLog : logs) {
                 try {
-                    scanLogMapper.insert(log);
+                    scanLogMapper.insert(scanLog);
                 } catch (Exception ex) {
-                    log.error("单个日志记录失败: {}", log, ex);
+                    log.error("单个日志记录失败: {}", scanLog, ex);
                 }
             }
         }

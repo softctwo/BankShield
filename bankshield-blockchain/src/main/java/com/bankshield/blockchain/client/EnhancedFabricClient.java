@@ -1,11 +1,16 @@
 package com.bankshield.blockchain.client;
 
+import com.bankshield.blockchain.dto.AuditBlock;
+import com.bankshield.blockchain.dto.AuditRecord;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.hyperledger.fabric.gateway.*;
 import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -13,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 增强版Fabric客户端
- * 
+ *
  * 功能：
  * 1. 通道管理（创建、加入、更新）
  * 2. 智能合约部署和调用
@@ -22,6 +27,7 @@ import java.util.concurrent.TimeUnit;
  * 5. 多组织协调
  */
 @Slf4j
+@Component
 public class EnhancedFabricClient {
     
     private static final String CHANNEL_NAME = "bankshield-channel";
@@ -208,11 +214,35 @@ public class EnhancedFabricClient {
      */
     public List<AuditBlock> getBlockHistory(int limit) throws Exception {
         log.info("获取区块历史 - 限制: {}", limit);
-        
+
         byte[] result = contract.evaluateTransaction("GetBlockHistory", String.valueOf(limit), "");
         String jsonStr = new String(result);
-        
+
         return Arrays.asList(new ObjectMapper().readValue(jsonStr, AuditBlock[].class));
+    }
+
+    /**
+     * 根据区块获取记录
+     */
+    public List<AuditRecord> getRecordsByBlock(String blockId) throws Exception {
+        log.info("根据区块获取记录 - BlockID: {}", blockId);
+
+        byte[] result = contract.evaluateTransaction("GetRecordsByBlock", blockId);
+        String jsonStr = new String(result);
+
+        return Arrays.asList(new ObjectMapper().readValue(jsonStr, AuditRecord[].class));
+    }
+
+    /**
+     * 查询高风险访问
+     */
+    public List<AuditRecord> queryHighRiskAccess(String startTime, String endTime) throws Exception {
+        log.info("查询高风险访问 - 开始时间: {}, 结束时间: {}", startTime, endTime);
+
+        byte[] result = contract.evaluateTransaction("QueryHighRiskAccess", startTime, endTime);
+        String jsonStr = new String(result);
+
+        return Arrays.asList(new ObjectMapper().readValue(jsonStr, AuditRecord[].class));
     }
     
     /**
@@ -262,18 +292,18 @@ public class EnhancedFabricClient {
         
         log.info("✅ 事件监听器注册成功");
     }
-    
+
     /**
      * 安装链码
      */
     public void installChaincode(String orgName) throws Exception {
         log.info("安装链码 - 组织: {}, 版本: {}", orgName, CHAINCODE_VERSION);
-        
+
         OrganizationConfig org = organizations.get(orgName);
         if (org == null) {
             throw new IllegalArgumentException("未知组织: " + orgName);
         }
-        
+
         // 创建安装提案
         InstallProposalRequest installProposal = hfClient.newInstallProposalRequest();
         installProposal.setChaincodeName(CHAINCODE_NAME);
@@ -281,44 +311,44 @@ public class EnhancedFabricClient {
         installProposal.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
         installProposal.setChaincodePath("/path/to/chaincode");
         installProposal.setChaincodeSource(new File(".."));
-        
+
         // 发送给所有Peer
         Collection<Peer> peers = new ArrayList<>();
         for (String peerAddress : org.getPeers()) {
             Peer peer = hfClient.newPeer(peerAddress);
             peers.add(peer);
         }
-        
+
         Collection<ProposalResponse> responses = hfClient.sendInstallProposal(installProposal, peers);
-        
+
         // 验证响应
         for (ProposalResponse response : responses) {
             if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
                 log.info("✅ 链码安装成功 - Peer: {}", response.getPeer().getName());
             } else {
-                log.error("❌ 链码安装失败 - Peer: {}, 状态: {}", 
+                log.error("❌ 链码安装失败 - Peer: {}, 状态: {}",
                         response.getPeer().getName(), response.getStatus());
             }
         }
     }
-    
+
     /**
      * 实例化链码
      */
     public void instantiateChaincode(String orgName) throws Exception {
         log.info("实例化链码 - 组织: {}, 通道: {}", orgName, CHANNEL_NAME);
-        
+
         // 创建实例化提案
         InstantiateProposalRequest instantiateProposal = hfClient.newInstantiationProposalRequest();
         instantiateProposal.setChaincodeName(CHAINCODE_NAME);
         instantiateProposal.setChaincodeVersion(CHAINCODE_VERSION);
         instantiateProposal.setProposalWaitTime(300000); // 5分钟
-        
+
         // 背书策略：2/3多数
         ChaincodeEndorsementPolicy policy = new ChaincodeEndorsementPolicy();
         policy.fromYAMLFile(new File("endorsement-policy.yaml"));
         instantiateProposal.setChaincodeEndorsementPolicy(policy);
-        
+
         // 发送给所有组织的Peer
         Collection<Peer> allPeers = new ArrayList<>();
         for (OrganizationConfig org : organizations.values()) {
@@ -327,9 +357,9 @@ public class EnhancedFabricClient {
                 allPeers.add(peer);
             }
         }
-        
+
         Collection<ProposalResponse> responses = hfClient.sendInstantiationProposal(instantiateProposal, allPeers);
-        
+
         // 验证响应
         for (ProposalResponse response : responses) {
             if (response.getStatus() == ProposalResponse.Status.SUCCESS) {
@@ -339,7 +369,7 @@ public class EnhancedFabricClient {
             }
         }
     }
-    
+
     /**
      * 关闭连接
      */
@@ -349,38 +379,38 @@ public class EnhancedFabricClient {
             log.info("Fabric网关连接已关闭");
         }
     }
-    
+
     /**
      * 触发告警（与AI模块集成）
      */
     private void triggerAlert(String eventType, AuditBlock block) {
         try {
             // 集成到AI响应系统
-            String alertMessage = String.format("区块链事件 - 类型:%s, 区块:%s, 时间:%s", 
-                    eventType, block.getBlockID(), new Date(block.getTimestamp() * 1000));
-            
+            String alertMessage = String.format("区块链事件 - 类型:%s, 区块:%s, 时间:%s",
+                    eventType, block.getBlockId(), new Date(block.getCreateTime().toEpochMilli()));
+
             log.warn("🚨 {}", alertMessage);
-            
+
             // TODO: 调用SmartResponseService
             // smartResponseService.triggerAlert(eventType, alertMessage);
-            
+
         } catch (Exception e) {
             log.error("触发告警失败", e);
         }
     }
-    
+
     // 辅助方法
     private Map<String, String> mapOf(String key, String value) {
         Map<String, String> map = new HashMap<>();
         map.put(key, value);
         return map;
     }
-    
+
     // Getters
     public Gateway getGateway() { return gateway; }
     public Network getNetwork() { return network; }
     public Contract getContract() { return contract; }
-    
+
     /**
      * 组织配置
      */
@@ -390,7 +420,7 @@ public class EnhancedFabricClient {
         private String mspId;
         private String adminMSPPath;
         private List<String> peers;
-        
+
         public OrganizationConfig(String name, String mspId, String adminMSPPath, List<String> peers) {
             this.name = name;
             this.mspId = mspId;
@@ -398,12 +428,4 @@ public class EnhancedFabricClient {
             this.peers = peers;
         }
     }
-    
-    // Lombok getters/setters for inner classes
-    // ...
 }
-
-// 依赖的外部类定义
-@Data class AuditBlock { private String blockId, merkleRoot, previousHash, creatorOrg, creatorMSP; private long timestamp; private int transactionCount; private Map<String, Object> metadata; }
-@Data class AuditRecord { private String recordId, blockId, transactionId, action, userId, resource, result, ip, details, hash; private long timestamp; }
-@Data class AlertClassificationResult { private String classification, explanation; private double confidence; }

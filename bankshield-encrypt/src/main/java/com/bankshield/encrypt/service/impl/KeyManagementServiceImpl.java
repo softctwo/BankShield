@@ -146,6 +146,11 @@ public class KeyManagementServiceImpl implements KeyManagementService {
             
             // 脱敏处理：不返回密钥材料
             resultPage.getRecords().forEach(key -> key.setKeyMaterial(null));
+
+            // 清理密钥材料引用
+            for (EncryptionKey key : resultPage.getRecords()) {
+                key.setKeyMaterial(null);
+            }
             
             return PageResult.success(resultPage.getRecords(), resultPage.getTotal(), pageNum, pageSize);
             
@@ -185,7 +190,7 @@ public class KeyManagementServiceImpl implements KeyManagementService {
             
             // 检查状态转换是否合法
             if (!isValidStatusTransition(encryptionKey.getKeyStatus(), status.getCode())) {
-                return Result.error("无效的状态转换");
+                return Result.error("无效的状态转换：从 " + encryptionKey.getKeyStatus() + " 到 " + status.getCode());
             }
             
             // 更新状态
@@ -395,30 +400,58 @@ public class KeyManagementServiceImpl implements KeyManagementService {
      * 检查密钥名称是否已存在
      */
     private boolean isKeyNameExists(String keyName) {
-        // TODO: 实现密钥名称唯一性检查
-        return false;
+        try {
+            // 使用现有方法查询密钥列表，然后筛选
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<EncryptionKey> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+            IPage<EncryptionKey> resultPage = encryptionKeyMapper.selectKeyPage(page, keyName, null, null, null);
+            return resultPage.getRecords() != null && !resultPage.getRecords().isEmpty();
+        } catch (Exception e) {
+            log.error("检查密钥名称是否存在时发生错误", e);
+            return true; // 发生错误时认为已存在，避免重复创建
+        }
     }
     
     /**
      * 验证状态转换是否合法
      */
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
-        // ACTIVE -> INACTIVE, EXPIRED, REVOKED, DESTROYED
-        // INACTIVE -> ACTIVE, DESTROYED
-        // EXPIRED -> DESTROYED
-        // REVOKED -> DESTROYED
-        // DESTROYED -> 不允许任何转换
-        
+        // 已销毁的密钥不能进行任何状态转换
         if (KeyStatus.DESTROYED.getCode().equals(currentStatus)) {
-            return false; // 已销毁的密钥不能进行任何状态转换
+            return false;
         }
-        
+
+        // 状态不变是允许的
         if (currentStatus.equals(newStatus)) {
-            return true; // 状态不变是允许的
+            return true;
         }
-        
-        // 简化的状态转换规则
-        return true; // TODO: 实现完整的状态转换逻辑
+
+        // ACTIVE 可以转换到 INACTIVE, EXPIRED, REVOKED, DESTROYED
+        if (KeyStatus.ACTIVE.getCode().equals(currentStatus)) {
+            return KeyStatus.INACTIVE.getCode().equals(newStatus) ||
+                   KeyStatus.EXPIRED.getCode().equals(newStatus) ||
+                   KeyStatus.REVOKED.getCode().equals(newStatus) ||
+                   KeyStatus.DESTROYED.getCode().equals(newStatus);
+        }
+
+        // INACTIVE 可以转换到 ACTIVE, DESTROYED
+        if (KeyStatus.INACTIVE.getCode().equals(currentStatus)) {
+            return KeyStatus.ACTIVE.getCode().equals(newStatus) ||
+                   KeyStatus.DESTROYED.getCode().equals(newStatus);
+        }
+
+        // EXPIRED 只能转换到 DESTROYED
+        if (KeyStatus.EXPIRED.getCode().equals(currentStatus)) {
+            return KeyStatus.DESTROYED.getCode().equals(newStatus);
+        }
+
+        // REVOKED 只能转换到 DESTROYED
+        if (KeyStatus.REVOKED.getCode().equals(currentStatus)) {
+            return KeyStatus.DESTROYED.getCode().equals(newStatus);
+        }
+
+        // 默认不允许转换
+        return false;
     }
     
     /**

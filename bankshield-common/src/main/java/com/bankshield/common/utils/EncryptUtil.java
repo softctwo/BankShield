@@ -109,30 +109,54 @@ public class EncryptUtil {
     }
 
     /**
-     * 生成AES密钥
+     * 生成AES密钥（默认256位）
      */
     public static String generateAesKey() {
+        return generateAesKey(AES_KEY_SIZE);
+    }
+
+    /**
+     * 生成AES密钥
+     *
+     * @param keySize 密钥长度（位），必须是128、192或256
+     */
+    public static String generateAesKey(int keySize) {
         try {
+            if (keySize != 128 && keySize != 192 && keySize != 256) {
+                throw new IllegalArgumentException("AES密钥长度必须是128、192或256位");
+            }
             KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(AES_KEY_SIZE);
+            keyGen.init(keySize);
             SecretKey secretKey = keyGen.generateKey();
             return Base64.getEncoder().encodeToString(secretKey.getEncoded());
         } catch (Exception e) {
-            log.error("生成AES密钥失败: {}", e.getMessage());
+            log.error("生成AES密钥失败，密钥长度: {}", keySize, e);
             throw new RuntimeException("生成AES密钥失败", e);
         }
     }
 
     /**
-     * 生成RSA密钥对
+     * 生成RSA密钥对（默认2048位）
      */
     public static KeyPair generateRsaKeyPair() {
+        return generateRsaKeyPair(RSA_KEY_SIZE);
+    }
+
+    /**
+     * 生成RSA密钥对
+     *
+     * @param keySize 密钥长度（位），必须至少为1024
+     */
+    public static KeyPair generateRsaKeyPair(int keySize) {
         try {
+            if (keySize < 1024) {
+                throw new IllegalArgumentException("RSA密钥长度必须至少为1024位");
+            }
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(RSA_KEY_SIZE);
+            keyGen.initialize(keySize);
             return keyGen.generateKeyPair();
         } catch (Exception e) {
-            log.error("生成RSA密钥对失败: {}", e.getMessage());
+            log.error("生成RSA密钥对失败，密钥长度: {}", keySize, e);
             throw new RuntimeException("生成RSA密钥对失败", e);
         }
     }
@@ -144,7 +168,7 @@ public class EncryptUtil {
      *             如需哈希，请使用SM3（国密）或SHA-256（国际标准）。
      *             此方法仅保留用于非安全目的的数据完整性校验。
      */
-    @Deprecated(message = "MD5不安全，不应用于安全相关场景")
+    @Deprecated
     public static String md5Hash(String plainText) {
         try {
             return SecureUtil.md5(plainText);

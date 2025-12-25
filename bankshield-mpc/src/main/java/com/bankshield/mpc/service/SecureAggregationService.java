@@ -61,31 +61,32 @@ public class SecureAggregationService {
             PaillierPrivateKey privateKey = keyPair.getPrivateKey();
             
             // 3. 各参与方加密本地数据
-            List<BigInteger> encryptedValues = new ArrayList<>();
+            // 修复：使用CopyOnWriteArrayList保证并发安全
+            java.util.concurrent.CopyOnWriteArrayList<BigInteger> encryptedValues = new java.util.concurrent.CopyOnWriteArrayList<>();
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            
+
             for (MpcParty party : parties) {
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     try {
                         // 获取本地数据
                         BigInteger localValue = mpcClientService.getLocalValue(
-                            party.getPartyName(), 
+                            party.getPartyName(),
                             request.getField()
                         );
-                        
+
                         // 加密本地数据
                         BigInteger encryptedValue = PaillierHomomorphicEncryption.encrypt(publicKey, localValue);
                         encryptedValues.add(encryptedValue);
-                        
-                        log.info("参与方 {} 数据加密完成，原始值: {}, 加密值: {}", 
+
+                        log.info("参与方 {} 数据加密完成，原始值: {}, 加密值: {}",
                                 party.getPartyName(), localValue, encryptedValue);
-                        
+
                     } catch (Exception e) {
                         log.error("参与方 {} 数据加密失败", party.getPartyName(), e);
                         throw new RuntimeException("数据加密失败: " + party.getPartyName(), e);
                     }
                 });
-                
+
                 futures.add(future);
             }
             

@@ -49,4 +49,14 @@ public class QualityRuleTemplate {
      * 默认严重程度
      */
     private String defaultSeverity;
+
+    /**
+     * 规则名称
+     */
+    private String ruleName;
+
+    /**
+     * SQL模板
+     */
+    private String sqlTemplate;
 }

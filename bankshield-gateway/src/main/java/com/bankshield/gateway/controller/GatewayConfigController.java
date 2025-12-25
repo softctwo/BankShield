@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.Optional;
 
@@ -29,6 +30,8 @@ public class GatewayConfigController {
     /**
      * 获取API路由配置列表
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/api/routes")
     public Result<Page<ApiRouteConfig>> getRoutes(
             @RequestParam(defaultValue = "1") int page,
@@ -58,6 +61,8 @@ public class GatewayConfigController {
     /**
      * 根据ID获取API路由配置
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/api/route/{id}")
     public Result<ApiRouteConfig> getRouteById(@PathVariable Long id) {
         try {
@@ -76,6 +81,8 @@ public class GatewayConfigController {
     /**
      * 创建API路由配置
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PostMapping("/api/route")
     public Result<String> createRoute(@RequestBody ApiRouteConfig routeConfig) {
         try {
@@ -121,6 +128,8 @@ public class GatewayConfigController {
     /**
      * 更新API路由配置
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PutMapping("/api/route/{id}")
     public Result<String> updateRoute(@PathVariable Long id, @RequestBody ApiRouteConfig routeConfig) {
         try {
@@ -161,6 +170,8 @@ public class GatewayConfigController {
     /**
      * 删除API路由配置
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @DeleteMapping("/api/route/{id}")
     public Result<String> deleteRoute(@PathVariable Long id) {
         try {
@@ -182,6 +193,8 @@ public class GatewayConfigController {
     /**
      * 启用/禁用API路由配置
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PutMapping("/api/route/{id}/status")
     public Result<String> updateRouteStatus(@PathVariable Long id, @RequestParam boolean enabled) {
         try {

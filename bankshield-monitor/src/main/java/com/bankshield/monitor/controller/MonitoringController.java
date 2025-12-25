@@ -14,13 +14,12 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 监控控制器
- * 
+ *
  * @author BankShield Team
  * @version 1.0.0
  */
 @RestController
 @RequestMapping("/api/monitoring")
-@CrossOrigin(origins = "*")
 public class MonitoringController {
 
     @Autowired
@@ -251,35 +250,42 @@ public class MonitoringController {
         Map<String, Object> trends = new HashMap<>();
         
         // 模拟趋势数据，实际应该从时序数据库获取
-        List<Object> cpuTrend = Arrays.asList(
-                Map.of("time", "00:00", "value", 45.2),
-                Map.of("time", "06:00", "value", 52.1),
-                Map.of("time", "12:00", "value", 68.5),
-                Map.of("time", "18:00", "value", 73.2),
-                Map.of("time", "24:00", "value", 58.9)
-        );
-        
-        List<Object> memoryTrend = Arrays.asList(
-                Map.of("time", "00:00", "value", 62.3),
-                Map.of("time", "06:00", "value", 65.7),
-                Map.of("time", "12:00", "value", 71.2),
-                Map.of("time", "18:00", "value", 78.4),
-                Map.of("time", "24:00", "value", 69.1)
-        );
-        
-        List<Object> alertTrend = Arrays.asList(
-                Map.of("time", "00:00", "value", 2),
-                Map.of("time", "06:00", "value", 5),
-                Map.of("time", "12:00", "value", 8),
-                Map.of("time", "18:00", "value", 12),
-                Map.of("time", "24:00", "value", 6)
-        );
+        List<Object> cpuTrend = new ArrayList<>();
+        cpuTrend.add(createTrendPoint("00:00", 45.2));
+        cpuTrend.add(createTrendPoint("06:00", 52.1));
+        cpuTrend.add(createTrendPoint("12:00", 68.5));
+        cpuTrend.add(createTrendPoint("18:00", 73.2));
+        cpuTrend.add(createTrendPoint("24:00", 58.9));
+
+        List<Object> memoryTrend = new ArrayList<>();
+        memoryTrend.add(createTrendPoint("00:00", 62.3));
+        memoryTrend.add(createTrendPoint("06:00", 65.7));
+        memoryTrend.add(createTrendPoint("12:00", 71.2));
+        memoryTrend.add(createTrendPoint("18:00", 78.4));
+        memoryTrend.add(createTrendPoint("24:00", 69.1));
+
+        List<Object> alertTrend = new ArrayList<>();
+        alertTrend.add(createTrendPoint("00:00", 2));
+        alertTrend.add(createTrendPoint("06:00", 5));
+        alertTrend.add(createTrendPoint("12:00", 8));
+        alertTrend.add(createTrendPoint("18:00", 12));
+        alertTrend.add(createTrendPoint("24:00", 6));
         
         trends.put("cpu", cpuTrend);
         trends.put("memory", memoryTrend);
         trends.put("alerts", alertTrend);
         
         return trends;
+    }
+
+    /**
+     * 创建趋势数据点
+     */
+    private Map<String, Object> createTrendPoint(String time, Object value) {
+        Map<String, Object> point = new HashMap<>();
+        point.put("time", time);
+        point.put("value", value);
+        return point;
     }
 
     /**

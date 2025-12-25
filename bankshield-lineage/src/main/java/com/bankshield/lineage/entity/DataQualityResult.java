@@ -74,6 +74,18 @@ public class DataQualityResult {
     private Long totalCount;
 
     /**
+     * 通过数量
+     */
+    @TableField("pass_count")
+    private Long passCount;
+
+    /**
+     * 失败数量
+     */
+    @TableField("fail_count")
+    private Long failCount;
+
+    /**
      * 错误样本
      */
     @TableField("error_samples")
@@ -90,6 +102,21 @@ public class DataQualityResult {
      */
     @TableField(value = "check_time", fill = FieldFill.INSERT)
     private LocalDateTime checkTime;
+
+    /**
+     * 状态：COMPLETED/FAILED/PENDING
+     */
+    private String status;
+
+    /**
+     * 是否通过
+     */
+    private Boolean passed;
+
+    /**
+     * 错误消息
+     */
+    private String errorMessage;
 
     /**
      * 创建时间

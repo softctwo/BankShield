@@ -67,13 +67,14 @@ public class BlockchainVerificationService {
             }
             
             log.info("✅ 审计区块验证通过 - BlockID: {}", blockId);
-            
-            return VerificationResult.success(Map.of(
-                "blockId", blockId,
-                "merkleRoot", block.getMerkleRoot(),
-                "recordCount", records.size(),
-                "verificationTime", System.currentTimeMillis()
-            ));
+
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("blockId", blockId);
+            resultData.put("merkleRoot", block.getMerkleRoot());
+            resultData.put("recordCount", records.size());
+            resultData.put("verificationTime", System.currentTimeMillis());
+
+            return VerificationResult.success(resultData);
             
         } catch (Exception e) {
             log.error("验证审计区块异常", e);

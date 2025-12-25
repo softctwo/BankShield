@@ -82,7 +82,7 @@ public class JointQueryService {
                         );
                         
                         localResults.put(party.getPartyName(), resultShare);
-                        log.info("参与方 {} 本地查询完成，结果: {}", party.getPartyName(), localResult);
+                        log.info("参与方 {} 本地查询完成，结果哈希: {}", party.getPartyName(), hashBigInteger(localResult));
                         
                     } catch (Exception e) {
                         log.error("参与方 {} 本地查询失败", party.getPartyName(), e);
@@ -112,11 +112,11 @@ public class JointQueryService {
                 resultHash
             );
             
-            // 更新任务状态
-            updateJobStatus(jobId, "SUCCESS", "查询结果: " + reconstructed);
+            // 更新任务状态（不包含明文结果）
+            updateJobStatus(jobId, "SUCCESS", "查询完成，结果哈希: " + generateResultHash(reconstructed));
             
-            log.info("联合查询任务完成，任务ID: {}, 结果: {}, 耗时: {}ms", 
-                    jobId, reconstructed, executionTime);
+            log.info("联合查询任务完成，任务ID: {}, 结果哈希: {}, 耗时: {}ms",
+                    jobId, generateResultHash(reconstructed), executionTime);
             
             return result;
             
@@ -147,6 +147,30 @@ public class JointQueryService {
         return parties;
     }
     
+    /**
+     * 生成BigInteger的哈希
+     */
+    private String hashBigInteger(BigInteger value) {
+        try {
+            byte[] bytes = value.toByteArray();
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(bytes);
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (Exception e) {
+            return "HASH_ERROR";
+        }
+    }
+
     /**
      * 生成结果哈希
      */

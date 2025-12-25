@@ -198,8 +198,14 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 return Result.error(ResultCode.ROLE_NOT_FOUND);
             }
 
-            // TODO: 检查角色是否被用户使用，如果有用户关联则不允许删除
-            // 这里可以添加关联查询逻辑
+            // 检查角色是否被用户使用，如果有用户关联则不允许删除
+            LambdaQueryWrapper<UserRole> userRoleWrapper = new LambdaQueryWrapper<>();
+            userRoleWrapper.eq(UserRole::getRoleId, id);
+            long userCount = userRoleMapper.selectCount(userRoleWrapper);
+            
+            if (userCount > 0) {
+                return Result.error("该角色已被 " + userCount + " 个用户使用，无法删除");
+            }
 
             // 删除角色
             boolean result = this.removeById(id);

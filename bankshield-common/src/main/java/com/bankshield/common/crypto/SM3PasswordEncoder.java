@@ -64,14 +64,22 @@ public class SM3PasswordEncoder implements PasswordEncoder {
                 return false;
             }
 
-            // 解析存储格式
-            String[] parts = encodedPassword.split("\\$");
-            if (parts.length != 3) {
+            // 解析存储格式: $SM3$salt$hash
+            // split("\\$") 产生 ["", "SM3", "salt", "hash"]，长度为4
+            String[] parts = encodedPassword.split("\\$", -1); // -1 保留尾随空字符串
+            if (parts.length != 4) {
+                log.warn("SM3密码格式无效，预期4部分，实际{}部分", parts.length);
                 return false;
             }
 
-            String saltStr = parts[1];
-            String expectedHash = parts[2];
+            // parts[0] 为空字符串（前缀$之前），parts[1] 为 "SM3"
+            if (!parts[1].equals("SM3")) {
+                log.warn("SM3密码格式无效，算法标识不是SM3: {}", parts[1]);
+                return false;
+            }
+
+            String saltStr = parts[2];
+            String expectedHash = parts[3];
 
             // 解码盐
             byte[] salt = Base64.getDecoder().decode(saltStr);

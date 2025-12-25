@@ -194,9 +194,13 @@ public class AlertingService {
     public void silenceAlert(String alertName, String duration, String comment) {
         try {
             Map<String, Object> silence = new HashMap<>();
-            silence.put("matchers", Arrays.asList(
-                    Map.of("name", "alertname", "value", alertName, "isRegex", false)
-            ));
+
+            Map<String, Object> matcher = new HashMap<>();
+            matcher.put("name", "alertname");
+            matcher.put("value", alertName);
+            matcher.put("isRegex", false);
+
+            silence.put("matchers", Arrays.asList(matcher));
             silence.put("startsAt", Instant.now().toString());
             silence.put("endsAt", Instant.now().plusSeconds(parseDuration(duration)).toString());
             silence.put("createdBy", "bankshield-monitor");

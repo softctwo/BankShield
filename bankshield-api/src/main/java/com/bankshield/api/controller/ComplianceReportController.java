@@ -33,6 +33,7 @@ import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * 合规报表控制器
@@ -66,6 +67,9 @@ public class ComplianceReportController {
     
     @Autowired
     private ComplianceCheckHistoryMapper historyMapper;
+
+    @Autowired
+    private Executor reportGenerationExecutor;
     
     /**
      * 报表模板管理 - 分页查询
@@ -168,14 +172,14 @@ public class ComplianceReportController {
             task.setCreateTime(LocalDateTime.now());
             taskMapper.insert(task);
             
-            // 异步执行生成
+            // 异步执行生成（使用专用线程池）
             CompletableFuture.runAsync(() -> {
                 try {
                     taskService.generateReport(task.getId());
                 } catch (Exception e) {
                     log.error("异步生成报表失败", e);
                 }
-            });
+            }, reportGenerationExecutor);
             
             return Result.success("生成任务已创建，任务ID: " + task.getId());
         } catch (Exception e) {

@@ -315,8 +315,8 @@ public class SecurityScanTaskServiceImpl extends ServiceImpl<SecurityScanTaskMap
                 resultWrapper.eq("task_id", taskId);
                 scanResultMapper.delete(resultWrapper);
                 
-                // 清理执行日志
-                taskExecutionLogs.remove(taskId);
+                // 清理执行日志（通过服务删除数据库中的日志）
+                scanLogService.deleteTaskLogs(taskId);
             }
             
             // 批量删除任务

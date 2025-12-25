@@ -9,14 +9,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 限流控制器
- * 
+ * 限流控制器 - 仅允许管理员访问
+ *
  * @author BankShield
  */
 @Slf4j
@@ -30,6 +31,7 @@ public class RateLimitController {
     /**
      * 获取限流规则列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/rules")
     public Result<Page<RateLimitRule>> getRules(
             @RequestParam(defaultValue = "1") int page,
@@ -45,7 +47,7 @@ public class RateLimitController {
             if (ruleName != null && !ruleName.trim().isEmpty()) {
                 Optional<RateLimitRule> rule = rateLimitService.getRuleByName(ruleName);
                 if (rule.isPresent()) {
-                    List<RateLimitRule> rules = List.of(rule.get());
+                    List<RateLimitRule> rules = Arrays.asList(rule.get());
                     return Result.success(new PageImpl<>(rules, pageable, rules.size()));
                 } else {
                     return Result.success(Page.empty(pageable));
@@ -58,13 +60,13 @@ public class RateLimitController {
             if (limitDimension != null && !limitDimension.trim().isEmpty()) {
                 allRules = allRules.stream()
                     .filter(rule -> limitDimension.equals(rule.getLimitDimension()))
-                    .toList();
+                    .collect(Collectors.toList());
             }
-            
+
             if (enabled != null) {
                 allRules = allRules.stream()
                     .filter(rule -> enabled.equals(rule.getEnabled()))
-                    .toList();
+                    .collect(Collectors.toList());
             }
             
             // 手动分页
@@ -83,6 +85,7 @@ public class RateLimitController {
     /**
      * 根据ID获取限流规则
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/rule/{id}")
     public Result<RateLimitRule> getRuleById(@PathVariable Long id) {
         try {
@@ -101,6 +104,8 @@ public class RateLimitController {
     /**
      * 创建限流规则
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PostMapping("/rule")
     public Result<String> createRule(@RequestBody RateLimitRule rule) {
         try {
@@ -137,6 +142,8 @@ public class RateLimitController {
     /**
      * 更新限流规则
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PutMapping("/rule/{id}")
     public Result<String> updateRule(@PathVariable Long id, @RequestBody RateLimitRule rule) {
         try {
@@ -155,6 +162,8 @@ public class RateLimitController {
     /**
      * 删除限流规则
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @DeleteMapping("/rule/{id}")
     public Result<String> deleteRule(@PathVariable Long id) {
         try {
@@ -176,6 +185,8 @@ public class RateLimitController {
     /**
      * 启用/禁用限流规则
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @PutMapping("/rule/{id}/status")
     public Result<String> updateRuleStatus(@PathVariable Long id, @RequestParam boolean enabled) {
         try {
@@ -199,6 +210,8 @@ public class RateLimitController {
     /**
      * 获取启用的限流规则
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/rules/enabled")
     public Result<List<RateLimitRule>> getEnabledRules() {
         try {
@@ -213,6 +226,8 @@ public class RateLimitController {
     /**
      * 获取限流统计信息
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/statistics")
     public Result<Object> getStatistics() {
         try {

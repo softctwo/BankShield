@@ -53,24 +53,31 @@ public class LineageServiceImpl extends ServiceImpl<DataLineageNodeMapper, DataL
             // 查询节点数据
             List<LineageGraph.LineageNode> nodes = nodeMapper.selectGraphNodes(centerNodeId, depth);
             graph.setNodes(nodes);
-            
+
+            // 初始化边列表为空列表，避免NPE
+            List<LineageGraph.LineageEdge> edges = new ArrayList<>();
+
             if (CollUtil.isNotEmpty(nodes)) {
                 // 提取节点ID列表
                 List<Long> nodeIds = nodes.stream()
                         .map(LineageGraph.LineageNode::getId)
                         .collect(Collectors.toList());
-                
+
                 // 查询边数据
-                List<LineageGraph.LineageEdge> edges = edgeMapper.selectGraphEdges(nodeIds);
+                edges = edgeMapper.selectGraphEdges(nodeIds);
                 graph.setLinks(edges);
-                
+
                 // 计算统计信息
                 LineageGraph.GraphStatistics statistics = calculateGraphStatistics(nodes, edges);
                 graph.setStatistics(statistics);
+            } else {
+                // 即使节点为空，也设置空的边列表
+                graph.setLinks(edges);
             }
-            
-            log.info("血缘图谱构建完成，节点数：{}，边数：{}", 
-                    graph.getNodes().size(), graph.getLinks().size());
+
+            log.info("血缘图谱构建完成，节点数：{}，边数：{}",
+                    graph.getNodes() != null ? graph.getNodes().size() : 0,
+                    graph.getLinks() != null ? graph.getLinks().size() : 0);
             
             return graph;
             
@@ -173,18 +180,22 @@ public class LineageServiceImpl extends ServiceImpl<DataLineageNodeMapper, DataL
     @Transactional
     public void discoverFromSqlLogs() {
         log.info("开始从SQL日志自动发现血缘关系");
-        
+
         try {
             // TODO: 实现从SQL日志提取逻辑
             // 1. 查询SQL执行日志
             // 2. 解析每条SQL语句
             // 3. 提取血缘信息
             // 4. 保存到数据库
-            
+
+            // 临时实现：记录日志并返回
+            log.warn("血缘自动发现功能尚未完全实现，当前仅记录操作日志");
+
             log.info("SQL日志血缘发现完成");
-            
+
         } catch (Exception e) {
             log.error("SQL日志血缘发现失败", e);
+            throw new RuntimeException("SQL日志血缘发现失败", e);
         }
     }
 
@@ -198,20 +209,24 @@ public class LineageServiceImpl extends ServiceImpl<DataLineageNodeMapper, DataL
     @Transactional
     public boolean saveLineageInfo(LineageInfo lineageInfo) {
         log.info("保存血缘信息");
-        
+
         try {
             if (lineageInfo == null) {
+                log.warn("血缘信息为空");
                 return false;
             }
-            
+
             // TODO: 实现血缘信息保存逻辑
             // 1. 保存节点信息
             // 2. 保存边信息
             // 3. 建立关联关系
-            
-            log.info("血缘信息保存成功");
+
+            // 临时实现：记录操作但不实际保存
+            log.warn("血缘信息保存功能尚未完全实现，当前仅记录操作日志：{}", lineageInfo.getSourceTable());
+
+            log.info("血缘信息保存成功（模拟）");
             return true;
-            
+
         } catch (Exception e) {
             log.error("保存血缘信息失败", e);
             return false;

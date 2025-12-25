@@ -51,6 +51,16 @@ public class LineageInfo implements Serializable {
      */
     private Integer impactWeight;
 
+    /**
+     * 获取源表名称（用于日志记录）
+     */
+    public String getSourceTable() {
+        if (sourceTables != null && !sourceTables.isEmpty()) {
+            return sourceTables.get(0).getTableName();
+        }
+        return null;
+    }
+
     @Data
     public static class TableInfo implements Serializable {
         private static final long serialVersionUID = 1L;

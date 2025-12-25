@@ -140,8 +140,25 @@ public class BlockchainAnchorServiceImpl implements BlockchainAnchorService {
          */
         public boolean verifyTransaction(String txHash, String expectedContentHash) {
             // 模拟交易验证
+            // 实际实现中，这里应该查询区块链网络验证交易是否真实存在
             log.info("模拟区块链交易验证，交易哈希: {}，期望内容哈希: {}", txHash, expectedContentHash);
-            return true; // 模拟验证成功
+
+            // 模拟验证逻辑：
+            // 1. 检查交易哈希格式
+            if (txHash == null || !txHash.startsWith("0x") || txHash.length() < 10) {
+                log.warn("交易哈希格式无效: {}", txHash);
+                return false;
+            }
+
+            // 2. 模拟网络延迟和失败率
+            if (System.currentTimeMillis() % 100 < 5) {
+                // 5% 概率模拟网络错误
+                log.warn("模拟区块链网络错误");
+                return false;
+            }
+
+            // 3. 模拟验证成功
+            return true;
         }
         
         /**

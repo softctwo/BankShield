@@ -47,23 +47,19 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
     @Override
     public String extractFromPdf(InputStream inputStream) {
         log.info("从PDF文件中提取水印");
-        
-        try {
-            // 加载PDF文档
-            PDDocument document = PDDocument.load(inputStream);
-            
+
+        // 使用try-with-resources确保资源正确关闭
+        try (PDDocument document = PDDocument.load(inputStream)) {
             // 提取文本内容
             PDFTextStripper textStripper = new PDFTextStripper();
             String textContent = textStripper.getText(document);
-            
-            document.close();
-            
+
             // 从文本中提取水印
             String watermarkContent = extractWatermarkFromText(textContent);
-            
+
             log.info("PDF水印提取完成，结果: {}", watermarkContent != null ? "成功" : "失败");
             return watermarkContent;
-            
+
         } catch (Exception e) {
             log.error("从PDF文件中提取水印失败", e);
             throw new BusinessException("PDF水印提取失败: " + e.getMessage());
@@ -73,25 +69,21 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
     @Override
     public String extractFromWord(InputStream inputStream) {
         log.info("从Word文档中提取水印");
-        
-        try {
-            // 加载Word文档
-            XWPFDocument document = new XWPFDocument(inputStream);
-            
+
+        // 使用try-with-resources确保资源正确关闭
+        try (XWPFDocument document = new XWPFDocument(inputStream)) {
             // 提取所有段落的文本
             StringBuilder textContent = new StringBuilder();
             for (XWPFParagraph paragraph : document.getParagraphs()) {
                 textContent.append(paragraph.getText()).append("\n");
             }
-            
-            document.close();
-            
+
             // 从文本中提取水印
             String watermarkContent = extractWatermarkFromText(textContent.toString());
-            
+
             log.info("Word水印提取完成，结果: {}", watermarkContent != null ? "成功" : "失败");
             return watermarkContent;
-            
+
         } catch (Exception e) {
             log.error("从Word文档中提取水印失败", e);
             throw new BusinessException("Word水印提取失败: " + e.getMessage());
@@ -101,17 +93,15 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
     @Override
     public String extractFromExcel(InputStream inputStream) {
         log.info("从Excel文档中提取水印");
-        
-        try {
-            // 加载Excel文档
-            Workbook workbook = new XSSFWorkbook(inputStream);
-            
+
+        // 使用try-with-resources确保资源正确关闭
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
             // 提取所有工作表的内容
             StringBuilder textContent = new StringBuilder();
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 textContent.append("Sheet: ").append(sheet.getSheetName()).append("\n");
-                
+
                 // 提取单元格内容
                 for (Row row : sheet) {
                     for (Cell cell : row) {
@@ -121,15 +111,13 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
                 }
                 textContent.append("\n");
             }
-            
-            workbook.close();
-            
+
             // 从文本中提取水印
             String watermarkContent = extractWatermarkFromText(textContent.toString());
-            
+
             log.info("Excel水印提取完成，结果: {}", watermarkContent != null ? "成功" : "失败");
             return watermarkContent;
-            
+
         } catch (Exception e) {
             log.error("从Excel文档中提取水印失败", e);
             throw new BusinessException("Excel水印提取失败: " + e.getMessage());

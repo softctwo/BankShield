@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -17,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 黑名单控制器
- * 
+ * 黑名单控制器 - 仅允许管理员访问
+ *
  * @author BankShield
  */
 @Slf4j
@@ -32,7 +33,9 @@ public class BlacklistController {
     /**
      * 获取IP黑名单列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/ips")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<Page<BlacklistIp>> getBlacklistIps(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -71,6 +74,7 @@ public class BlacklistController {
     /**
      * 根据ID获取黑名单记录
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/ip/{id}")
     public Result<BlacklistIp> getBlacklistIpById(@PathVariable Long id) {
         try {
@@ -93,6 +97,7 @@ public class BlacklistController {
     /**
      * 添加IP到黑名单
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/ip")
     public Result<String> addToBlacklist(@RequestBody Map<String, String> params) {
         try {
@@ -141,6 +146,7 @@ public class BlacklistController {
      * 批量添加IP到黑名单
      */
     @PostMapping("/ips/batch")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<String> addToBlacklistBatch(@RequestBody Map<String, Object> params) {
         try {
             @SuppressWarnings("unchecked")
@@ -187,6 +193,7 @@ public class BlacklistController {
      * 从黑名单中移除IP
      */
     @PutMapping("/ip/{id}/unblock")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<String> removeFromBlacklist(@PathVariable Long id, @RequestParam String operator) {
         try {
             if (operator == null || operator.trim().isEmpty()) {
@@ -208,6 +215,7 @@ public class BlacklistController {
      * 批量从黑名单中移除IP
      */
     @PutMapping("/ips/batch/unblock")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<String> removeFromBlacklistBatch(@RequestBody Map<String, Object> params) {
         try {
             @SuppressWarnings("unchecked")
@@ -236,6 +244,7 @@ public class BlacklistController {
      * 检查IP是否在黑名单中
      */
     @GetMapping("/ip/check")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<Map<String, Object>> checkIpInBlacklist(@RequestParam String ipAddress) {
         try {
             boolean isBlacklisted = blacklistService.isBlacklisted(ipAddress);
@@ -266,6 +275,7 @@ public class BlacklistController {
      * 获取黑名单统计信息
      */
     @GetMapping("/statistics")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<BlacklistService.BlacklistStatistics> getStatistics() {
         try {
             BlacklistService.BlacklistStatistics statistics = blacklistService.getStatistics();
@@ -280,6 +290,7 @@ public class BlacklistController {
      * 获取活跃的黑名单
      */
     @GetMapping("/ips/active")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<List<BlacklistIp>> getActiveBlacklists() {
         try {
             List<BlacklistIp> activeBlacklists = blacklistService.getActiveBlacklists();
@@ -294,6 +305,7 @@ public class BlacklistController {
      * 处理过期的黑名单（定时任务调用）
      */
     @PutMapping("/ips/process-expired")
+    @PreAuthorize("hasRole(\'ADMIN\')")
     public Result<String> processExpiredBlacklists() {
         try {
             blacklistService.processExpiredBlacklists();

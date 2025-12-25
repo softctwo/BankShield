@@ -10,6 +10,13 @@ server:
 spring:
   application:
     name: bankshield-api
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
   
   # 数据源配置
   datasource:
@@ -68,6 +75,27 @@ mybatis-plus:
       max-limit: 500   # 单页分页条数限制
       db-type: mysql
       optimize: true   # 开启count优化
+
+  # Redis缓存配置
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 50
+        max-idle: 25
+        min-idle: 5
+        max-wait: 1000ms
+    
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 默认10分钟
+      cache-null-values: false
+      key-prefix: "bankshield:"
 
 # 日志配置
 logging:
@@ -165,25 +193,3 @@ async:
     max-pool-size: 32   # 核心数*2
     queue-capacity: 5000
     thread-name-prefix: "BankShield-Async-"
-
-# Redis缓存配置
-spring:
-  redis:
-    host: localhost
-    port: 6379
-    password: 
-    database: 0
-    timeout: 5000ms
-    lettuce:
-      pool:
-        max-active: 50
-        max-idle: 25
-        min-idle: 5
-        max-wait: 1000ms
-    
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000  # 默认10分钟
-      cache-null-values: false
-      key-prefix: "bankshield:"

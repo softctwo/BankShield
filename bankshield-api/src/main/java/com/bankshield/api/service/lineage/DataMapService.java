@@ -6,6 +6,7 @@ import com.bankshield.api.entity.DataSource;
 import com.bankshield.api.mapper.DataFlowMapper;
 import com.bankshield.api.mapper.DataMapMapper;
 import com.bankshield.api.mapper.DataSourceMapper;
+import com.bankshield.common.exception.BusinessExceptionUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,11 +43,9 @@ public class DataMapService {
         try {
             log.info("开始生成全局数据地图");
             
-            // 获取所有数据流关系
-            List<DataFlow> allFlows = dataFlowMapper.selectList(null);
-            
-            // 获取所有数据源
-            List<DataSource> allDataSources = dataSourceMapper.selectList(null);
+             // 获取所有数据流关系
+             List<DataFlow> allFlows = dataFlowMapper.selectList(null);
+             List<DataSource> allDataSources = dataSourceMapper.selectList(null);
             
             // 构建地图数据
             MapData mapData = buildMapData(allFlows, allDataSources);
@@ -61,7 +60,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成全局数据地图失败", e);
-            throw new RuntimeException("生成全局数据地图失败: " + e.getMessage(), e);
+            BusinessExceptionUtils.throwBusinessOperation("生成全局数据地图", e.getMessage());
         }
     }
 
@@ -89,7 +88,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成业务域数据地图失败: {}", businessDomain, e);
-            throw new RuntimeException("生成业务域数据地图失败: " + e.getMessage(), e);
+            BusinessExceptionUtils.throwBusinessOperation("生成业务域数据地图", e.getMessage());
         }
     }
 
@@ -122,7 +121,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成数据源数据地图失败: {}", dataSourceId, e);
-            throw new RuntimeException("生成数据源数据地图失败: " + e.getMessage(), e);
+            BusinessExceptionUtils.throwBusinessOperation("生成数据源数据地图", e.getMessage());
         }
     }
 
@@ -154,7 +153,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成自定义数据地图失败: {}", mapName, e);
-            throw new RuntimeException("生成自定义数据地图失败: " + e.getMessage(), e);
+            BusinessExceptionUtils.throwBusinessOperation("生成自定义数据地图", e.getMessage());
         }
     }
 

@@ -39,55 +39,67 @@ public class PsiService {
     
     /**
      * 执行隐私求交
-     * 
+     * 重要：不应收集明文数据，应使用加密数据或哈希承诺
+     *
      * @param request 求交请求
      * @param jobId 任务ID
      * @return 求交结果
      */
     public PsiResult performPSI(PsiRequest request, Long jobId) {
+        log.warn("⚠️ 警告：当前实现存在隐私泄露风险！在中心端收集明文数据不符合隐私保护要求。");
         log.info("开始执行隐私求交任务，任务ID: {}, 参与方: {}", jobId, request.getPartyIds());
-        
+
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // 1. 验证参与方
             List<MpcParty> parties = validateParties(request.getPartyIds());
-            
+
             // 2. 生成OT矩阵和RSA密钥对
             AsymmetricCipherKeyPair keyPair = ObliviousTransfer.generateKeyPair();
-            
-            // 3. 收集各参与方的数据
-            Map<String, Set<String>> partyData = new ConcurrentHashMap<>();
+
+            // 3. 收集各参与方的数据（加密或哈希承诺）
+            // 正确实现：只收集哈希承诺，不收集明文
+            Map<String, Set<String>> partyHashes = new ConcurrentHashMap<>();
             List<CompletableFuture<Void>> futures = new ArrayList<>();
-            
+
             for (MpcParty party : parties) {
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     try {
-                        Set<String> data = mpcClientService.getLocalData(party.getPartyName(), request.getField());
-                        partyData.put(party.getPartyName(), data);
-                        log.info("参与方 {} 数据收集完成，数据量: {}", party.getPartyName(), data.size());
+                        // 获取明文数据（仅用于演示，实际应使用哈希承诺）
+                        Set<String> rawData = mpcClientService.getLocalData(party.getPartyName(), request.getField());
+
+                        // 对数据进行哈希处理（实际MPC中应使用承诺协议）
+                        Set<String> hashedData = rawData.stream()
+                            .map(data -> hashData(data, party.getPartyName()))
+                            .collect(Collectors.toSet());
+
+                        partyHashes.put(party.getPartyName(), hashedData);
+                        log.info("参与方 {} 数据哈希完成，数据量: {}", party.getPartyName(), hashedData.size());
+                        log.warn("⚠️ 仍存在隐私风险：明文数据在本地处理后可能仍被记录");
                     } catch (Exception e) {
-                        log.error("参与方 {} 数据收集失败", party.getPartyName(), e);
-                        throw new RuntimeException("数据收集失败: " + party.getPartyName(), e);
+                        log.error("参与方 {} 数据处理失败", party.getPartyName(), e);
+                        throw new RuntimeException("数据处理失败: " + party.getPartyName(), e);
                     }
                 });
                 futures.add(future);
             }
-            
-            // 等待所有参与方数据收集完成
+
+            // 等待所有参与方数据处理完成
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            
-            // 4. 执行OT协议求交
-            Set<String> intersection = computeIntersection(partyData, keyPair);
-            
+
+            // 4. 执行OT协议求交（使用哈希值）
+            Set<String> intersection = computeIntersection(partyHashes, keyPair);
+
             // 5. 生成结果哈希
             String resultHash = generateResultHash(intersection);
-            
+
             long executionTime = System.currentTimeMillis() - startTime;
-            
+
+            // 重要：不返回明文结果，只返回交集大小和哈希
             PsiResult result = new PsiResult(
                 intersection.size(),
-                intersection,
+                null, // 不返回明文交集，只返回大小
                 parties.size(),
                 executionTime,
                 resultHash
@@ -174,6 +186,33 @@ public class PsiService {
             return hexString.toString();
         } catch (Exception e) {
             throw new RuntimeException("生成结果哈希失败", e);
+        }
+    }
+
+    /**
+     * 对数据进行哈希处理（临时方案）
+     * 实际MPC中应使用承诺协议如Pedersen承诺
+     */
+    private String hashData(String data, String partyName) {
+        try {
+            // 使用SHA-256对数据进行哈希
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            String input = data + ":" + partyName; // 加入参与方标识
+            byte[] hash = md.digest(input.getBytes("UTF-8"));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (Exception e) {
+            log.error("数据哈希失败: {}", data, e);
+            throw new RuntimeException("数据哈希失败", e);
         }
     }
     

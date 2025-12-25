@@ -17,8 +17,31 @@ import java.util.Set;
 @Slf4j
 @Service
 public class MpcClientService {
-    
+
     private static final Random RANDOM = new Random();
+
+    /**
+     * 对字符串进行哈希处理
+     */
+    private String hashString(String input) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(input.getBytes("UTF-8"));
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.substring(0, 16) + "..."; // 只返回前16位，避免泄露完整哈希
+        } catch (Exception e) {
+            return "HASH_ERROR";
+        }
+    }
     
     /**
      * 获取参与方的本地数据（模拟实现）
@@ -29,7 +52,7 @@ public class MpcClientService {
      */
     public Set<String> getLocalData(String partyName, String field) {
         log.info("获取参与方 {} 的本地数据，字段: {}", partyName, field);
-        
+
         // 模拟不同参与方的数据
         Set<String> data = new HashSet<>();
         
@@ -67,7 +90,7 @@ public class MpcClientService {
                     data.add("CUST_" + String.format("%06d", RANDOM.nextInt(100000)));
                 }
         }
-        
+
         log.info("参与方 {} 返回 {} 条数据", partyName, data.size());
         return data;
     }
@@ -81,8 +104,9 @@ public class MpcClientService {
      * @return 查询结果
      */
     public BigInteger queryLocalData(String partyName, String customerId, String queryType) {
-        log.info("参与方 {} 执行本地查询，客户ID: {}, 查询类型: {}", partyName, customerId, queryType);
-        
+        log.info("参与方 {} 执行本地查询，客户ID哈希: {}, 查询类型: {}",
+                partyName, hashString(customerId), queryType);
+
         // 模拟不同查询类型的结果
         BigInteger result;
         
@@ -106,8 +130,8 @@ public class MpcClientService {
                 // 默认随机结果
                 result = BigInteger.valueOf(RANDOM.nextInt(1000000));
         }
-        
-        log.info("参与方 {} 本地查询结果: {}", partyName, result);
+
+        log.info("参与方 {} 本地查询完成", partyName);
         return result;
     }
     
@@ -120,7 +144,7 @@ public class MpcClientService {
      */
     public BigInteger getLocalValue(String partyName, String field) {
         log.info("获取参与方 {} 的本地数值，字段: {}", partyName, field);
-        
+
         // 模拟不同参与方和字段的数值
         BigInteger value;
         
@@ -158,8 +182,8 @@ public class MpcClientService {
             // 默认随机数值
             value = BigInteger.valueOf(RANDOM.nextInt(100000000));
         }
-        
-        log.info("参与方 {} 本地数值: {}", partyName, value);
+
+        log.info("参与方 {} 本地数值获取完成", partyName);
         return value;
     }
 }

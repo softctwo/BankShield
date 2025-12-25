@@ -49,4 +49,19 @@ public class QualityStatistics {
      * 通过率
      */
     private Double passRate;
+
+    /**
+     * 通过检查次数
+     */
+    private Long passedChecks;
+
+    /**
+     * 失败检查次数
+     */
+    private Long failedChecks;
+
+    /**
+     * 最后检查时间
+     */
+    private Long lastCheckTime;
 }

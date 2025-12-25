@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * 每日报表生成定时任务
@@ -30,6 +31,9 @@ public class DailyReportGenerationJob {
     
     @Autowired
     private ReportGenerationTaskService taskService;
+
+    @Autowired
+    private Executor reportGenerationExecutor;
     
     /**
      * 每天早上8点执行日报生成任务
@@ -54,14 +58,14 @@ public class DailyReportGenerationJob {
                     task.setCreateTime(LocalDateTime.now());
                     taskMapper.insert(task);
                     
-                    // 异步执行生成
+                    // 异步执行生成（使用专用线程池）
                     CompletableFuture.runAsync(() -> {
                         try {
                             taskService.generateReport(task.getId());
                         } catch (Exception e) {
                             log.error("异步生成报表失败，任务ID: {}", task.getId(), e);
                         }
-                    });
+                    }, reportGenerationExecutor);
                     
                     log.info("创建日报生成任务成功，模板ID: {}, 任务ID: {}", template.getId(), task.getId());
                     
@@ -100,14 +104,14 @@ public class DailyReportGenerationJob {
                     task.setCreateTime(LocalDateTime.now());
                     taskMapper.insert(task);
                     
-                    // 异步执行生成
+                    // 异步执行生成（使用专用线程池）
                     CompletableFuture.runAsync(() -> {
                         try {
                             taskService.generateReport(task.getId());
                         } catch (Exception e) {
                             log.error("异步生成报表失败，任务ID: {}", task.getId(), e);
                         }
-                    });
+                    }, reportGenerationExecutor);
                     
                     log.info("创建周报生成任务成功，模板ID: {}, 任务ID: {}", template.getId(), task.getId());
                     
@@ -146,14 +150,14 @@ public class DailyReportGenerationJob {
                     task.setCreateTime(LocalDateTime.now());
                     taskMapper.insert(task);
                     
-                    // 异步执行生成
+                    // 异步执行生成（使用专用线程池）
                     CompletableFuture.runAsync(() -> {
                         try {
                             taskService.generateReport(task.getId());
                         } catch (Exception e) {
                             log.error("异步生成报表失败，任务ID: {}", task.getId(), e);
                         }
-                    });
+                    }, reportGenerationExecutor);
                     
                     log.info("创建月报生成任务成功，模板ID: {}, 任务ID: {}", template.getId(), task.getId());
                     
@@ -192,14 +196,14 @@ public class DailyReportGenerationJob {
                     task.setCreateTime(LocalDateTime.now());
                     taskMapper.insert(task);
                     
-                    // 异步执行生成
+                    // 异步执行生成（使用专用线程池）
                     CompletableFuture.runAsync(() -> {
                         try {
                             taskService.generateReport(task.getId());
                         } catch (Exception e) {
                             log.error("异步生成报表失败，任务ID: {}", task.getId(), e);
                         }
-                    });
+                    }, reportGenerationExecutor);
                     
                     log.info("创建季报生成任务成功，模板ID: {}, 任务ID: {}", template.getId(), task.getId());
                     

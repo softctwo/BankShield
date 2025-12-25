@@ -1,7 +1,9 @@
 package com.bankshield.api.service.impl;
 
 import com.bankshield.api.entity.Dept;
+import com.bankshield.api.entity.User;
 import com.bankshield.api.mapper.DeptMapper;
+import com.bankshield.api.mapper.UserMapper;
 import com.bankshield.api.service.DeptService;
 import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -30,6 +32,9 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
 
     @Autowired
     private DeptMapper deptMapper;
+    
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public Result<Dept> getDeptById(Long id) {
@@ -199,8 +204,14 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
                 return Result.error("该部门存在子部门，不能删除");
             }
 
-            // TODO: 检查部门下是否有用户，如果有用户则不允许删除
-            // 这里可以添加关联查询逻辑
+            // 检查部门下是否有用户，如果有用户则不允许删除
+            LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
+            userWrapper.eq(User::getDeptId, id);
+            long userCount = userMapper.selectCount(userWrapper);
+            
+            if (userCount > 0) {
+                return Result.error("该部门下有 " + userCount + " 个用户，不能删除");
+            }
 
             // 删除部门
             boolean result = this.removeById(id);

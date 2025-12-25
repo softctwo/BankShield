@@ -45,4 +45,29 @@ public class QualityTestResult {
      * 消息
      */
     private String message;
+
+    /**
+     * 规则ID
+     */
+    private Long ruleId;
+
+    /**
+     * 测试时间
+     */
+    private Long testTime;
+
+    /**
+     * 样本数量
+     */
+    private Long sampleCount;
+
+    /**
+     * 通过样本数量
+     */
+    private Long passedSampleCount;
+
+    /**
+     * 失败样本数量
+     */
+    private Long failedSampleCount;
 }

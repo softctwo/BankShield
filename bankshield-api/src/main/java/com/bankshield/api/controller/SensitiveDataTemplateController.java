@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -258,13 +260,45 @@ public class SensitiveDataTemplateController {
             sensitiveDataTemplateMapper.delete(deleteWrapper);
             
             // 重新插入默认模板
-            // TODO: 这里应该调用SQL脚本重新插入默认模板
-            // 现在只是模拟操作
+            // 重新插入默认模板
+            insertDefaultTemplates();
             
             return Result.OK("重置默认模板成功");
         } catch (Exception e) {
             log.error("重置默认模板失败: {}", e.getMessage());
             return Result.error("重置默认模板失败");
         }
+    }
+    
+    /**
+     * 插入默认敏感数据模板
+     */
+    private void insertDefaultTemplates() {
+        // 金融行业默认模板数据
+        List<SensitiveDataTemplate> defaultTemplates = Arrays.asList(
+            SensitiveDataTemplate.builder()
+                .typeName("员工工号").typeCode("EMPLOYEE_ID").securityLevel(1)
+                .pattern("^EMP\\d{6}$").keywords("[\"工号\", \"employee\", \"staff\"]")
+                .standardRef("JR/T0197").examples("[\"EMP123456\"]")
+                .build(),
+            SensitiveDataTemplate.builder()
+                .typeName("客户性别").typeCode("GENDER").securityLevel(2)
+                .pattern("^(男|女|未知)$").keywords("[\"性别\", \"gender\"]")
+                .standardRef("JR/T0197").examples("[\"男\", \"女\", \"未知\"]")
+                .build(),
+            SensitiveDataTemplate.builder()
+                .typeName("手机号码").typeCode("PHONE").securityLevel(3)
+                .pattern("^1[3-9]\\d{9}$").keywords("[\"手机\", \"电话\", \"mobile\", \"phone\"]")
+                .standardRef("JR/T0171").examples("[\"13812345678\", \"13987654321\"]")
+                .build()
+        );
+        
+        // 批量插入
+        for (SensitiveDataTemplate template : defaultTemplates) {
+            template.setCreateTime(LocalDateTime.now());
+            sensitiveDataTemplateMapper.insert(template);
+        }
+        
+        log.info("成功插入 {} 个默认敏感数据模板", defaultTemplates.size());
     }
 }

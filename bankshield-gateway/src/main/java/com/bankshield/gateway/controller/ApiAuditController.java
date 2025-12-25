@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ public class ApiAuditController {
     /**
      * 获取API访问日志列表
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/access/logs")
     public Result<Page<ApiAccessLog>> getAccessLogs(
             @RequestParam(defaultValue = "1") int page,
@@ -73,6 +76,8 @@ public class ApiAuditController {
     /**
      * 根据ID获取访问日志
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/access/log/{id}")
     public Result<ApiAccessLog> getAccessLogById(@PathVariable Long id) {
         try {
@@ -91,6 +96,8 @@ public class ApiAuditController {
     /**
      * 获取慢查询日志
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/slow-queries")
     public Result<Page<ApiAccessLog>> getSlowQueries(
             @RequestParam(defaultValue = "1") int page,
@@ -110,6 +117,8 @@ public class ApiAuditController {
     /**
      * 获取访问统计信息
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/statistics")
     public Result<Map<String, Object>> getAccessStatistics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
@@ -141,6 +150,8 @@ public class ApiAuditController {
     /**
      * 获取TOP访问路径
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/top-paths")
     public Result<List<Object[]>> getTopRequestPaths(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
@@ -165,6 +176,8 @@ public class ApiAuditController {
     /**
      * 获取错误率统计
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/error-rate")
     public Result<Map<String, Object>> getErrorRateStatistics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
@@ -196,6 +209,8 @@ public class ApiAuditController {
     /**
      * 删除访问日志
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @DeleteMapping("/access/log/{id}")
     public Result<String> deleteAccessLog(@PathVariable Long id) {
         try {
@@ -216,6 +231,8 @@ public class ApiAuditController {
     /**
      * 批量删除访问日志
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @DeleteMapping("/access/logs/batch")
     public Result<String> deleteAccessLogsBatch(@RequestBody Map<String, List<Long>> params) {
         try {
@@ -236,6 +253,8 @@ public class ApiAuditController {
     /**
      * 清空访问日志（谨慎操作）
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @DeleteMapping("/access/logs/clear")
     public Result<String> clearAccessLogs() {
         try {
@@ -251,6 +270,8 @@ public class ApiAuditController {
     /**
      * 获取实时访问统计
      */
+    
+    $@PreAuthorize("hasRole('ADMIN'"))
     @GetMapping("/realtime-stats")
     public Result<Map<String, Object>> getRealtimeStats() {
         try {

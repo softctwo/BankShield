@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
-import com.fasterxml.jackson.databind.jsontype.impl.BasicPolymorphicTypeValidator;
+// import com.fasterxml.jackson.databind.jsontype.impl.BasicPolymorphicTypeValidator; // 注释掉以避免版本兼容性问题
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -47,12 +47,7 @@ public class RedisCacheConfig {
         ObjectMapper om = new ObjectMapper();
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
 
-        // 使用白名单机制限制可反序列化的类型，避免反序列化攻击
-        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType(Object.class)
-                .build();
-        om.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
-
+        // 配置序列化器
         jackson2JsonRedisSerializer.setObjectMapper(om);
 
         // 配置key和value的序列化方式
@@ -127,11 +122,6 @@ public class RedisCacheConfig {
         public GenericJackson2JsonRedisSerializer() {
             this.objectMapper = new ObjectMapper();
             this.objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-            // 使用白名单机制限制可反序列化的类型，避免反序列化攻击
-            PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-                    .allowIfBaseType(Object.class)
-                    .build();
-            this.objectMapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.NON_FINAL);
         }
 
         @Override

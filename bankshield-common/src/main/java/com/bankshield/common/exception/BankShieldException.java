@@ -1,6 +1,6 @@
 package com.bankshield.common.exception;
 
-import com.bankshield.common.enums.ResultCode;
+import com.bankshield.common.result.ResultCode;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -43,29 +43,24 @@ public class SqlParseLineageDiscoveryEngine implements LineageDiscoveryEngine {
     @Override
     public List<DataFlow> discoverLineage(DataSource dataSource, Map<String, Object> config) {
         List<DataFlow> dataFlows = new ArrayList<>();
-        
-        try {
-            // 获取数据库连接
-            Connection connection = getConnection(dataSource);
-            
+
+        try (Connection connection = getConnection(dataSource)) {
             // 1. 分析视图定义
             dataFlows.addAll(analyzeViews(connection, dataSource.getId()));
-            
+
             // 2. 分析存储过程
             dataFlows.addAll(analyzeProcedures(connection, dataSource.getId()));
-            
+
             // 3. 分析触发器
             dataFlows.addAll(analyzeTriggers(connection, dataSource.getId()));
-            
+
             // 4. 分析SQL日志（如果可用）
             dataFlows.addAll(analyzeSqlLogs(connection, dataSource.getId()));
-            
-            connection.close();
-            
+
         } catch (Exception e) {
             log.error("SQL解析血缘发现失败", e);
         }
-        
+
         return dataFlows;
     }
 
@@ -274,13 +269,23 @@ public class SqlParseLineageDiscoveryEngine implements LineageDiscoveryEngine {
 
     /**
      * 获取数据库连接
+     * 注意：此功能需要根据实际数据源配置实现
      */
     private Connection getConnection(DataSource dataSource) throws SQLException {
-        // 解析连接配置
+        if (dataSource == null) {
+            throw new SQLException("数据源不能为空");
+        }
+
         String config = dataSource.getConnectionConfig();
-        // 这里应该解析JSON配置并创建连接
-        // 简化处理，实际需要根据数据源类型创建相应连接
-        return null;
+        if (config == null || config.trim().isEmpty()) {
+            throw new SQLException("数据源连接配置不能为空，数据源ID: " + dataSource.getId());
+        }
+
+        // TODO: 实际实现需要根据数据源类型创建连接
+        // 需要解析JSON配置（包含url, username, password等）
+        // 并使用DriverManager或DataSource创建连接
+
+        throw new SQLException("SQL血缘发现引擎的数据库连接功能尚未实现，请配置数据源连接信息或使用其他发现策略。数据源ID: " + dataSource.getId());
     }
 
     /**

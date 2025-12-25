@@ -7,6 +7,8 @@ import com.bankshield.api.mapper.DataFlowMapper;
 import com.bankshield.api.mapper.DataLineageAutoDiscoveryMapper;
 import com.bankshield.api.service.lineage.discovery.LineageDiscoveryEngine;
 import com.bankshield.api.service.IDataSourceService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -31,6 +33,8 @@ public class LineageDiscoveryService {
     private final DataLineageAutoDiscoveryMapper discoveryTaskMapper;
     private final DataFlowMapper dataFlowMapper;
     private final IDataSourceService dataSourceService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 启动血缘发现任务
@@ -297,22 +301,33 @@ public class LineageDiscoveryService {
      */
     private Map<String, Object> parseTaskConfig(String configJson) {
         if (configJson == null || configJson.trim().isEmpty()) {
-            return new HashMap<>();
+            log.debug("任务配置为空，使用默认配置");
+            return getDefaultConfig();
         }
-        
+
         try {
-            // 这里应该使用JSON解析库解析配置
-            // 简化处理，返回默认配置
-            Map<String, Object> config = new HashMap<>();
-            config.put("scanTables", true);
-            config.put("scanViews", true);
-            config.put("scanProcedures", true);
-            config.put("confidenceThreshold", 0.5);
+            // 使用Jackson解析JSON配置
+            Map<String, Object> config = objectMapper.readValue(configJson, new TypeReference<Map<String, Object>>() {});
+            log.debug("成功解析任务配置: {}", config);
             return config;
         } catch (Exception e) {
-            log.warn("解析任务配置失败，使用默认配置", e);
-            return new HashMap<>();
+            log.warn("解析任务配置失败，使用默认配置，错误: {}", e.getMessage());
+            return getDefaultConfig();
         }
+    }
+
+    /**
+     * 获取默认配置
+     */
+    private Map<String, Object> getDefaultConfig() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("scanTables", true);
+        config.put("scanViews", true);
+        config.put("scanProcedures", true);
+        config.put("scanTriggers", false);
+        config.put("confidenceThreshold", 0.5);
+        config.put("maxDepth", 5);
+        return config;
     }
 
     /**
@@ -326,12 +341,21 @@ public class LineageDiscoveryService {
         task.setStatus("PENDING");
         task.setCreateTime(LocalDateTime.now());
         task.setUpdateTime(LocalDateTime.now());
-        
-        // 序列化配置
+
+        // 使用JSON序列化配置
         if (config != null && !config.isEmpty()) {
-            task.setConfig(config.toString()); // 这里应该使用JSON序列化
+            try {
+                String configJson = objectMapper.writeValueAsString(config);
+                task.setConfig(configJson);
+                log.debug("任务配置序列化成功: {}", configJson);
+            } catch (Exception e) {
+                log.error("任务配置序列化失败，使用默认配置", e);
+                task.setConfig(null);
+            }
+        } else {
+            log.debug("任务配置为空，将使用默认配置");
         }
-        
+
         discoveryTaskMapper.insert(task);
         return task;
     }

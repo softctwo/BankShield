@@ -211,33 +211,54 @@ public class WatermarkTaskServiceImpl extends ServiceImpl<WatermarkTaskMapper, W
      */
     private void executeFileTask(WatermarkTask task, WatermarkTemplate template, AtomicInteger progress) {
         log.info("执行文件类型水印任务，任务ID: {}", task.getId());
-        
+
+        // 检查取消标志
+        if (taskCancelMap.getOrDefault(task.getId(), false)) {
+            throw new BusinessException("任务已被取消");
+        }
+
+        progress.set(10); // 开始处理
+
         // 这里需要实现具体的文件处理逻辑
         // 1. 获取待处理的文件列表
         // 2. 逐个文件添加水印
         // 3. 更新进度和处理数量
-        
-        progress.set(10); // 开始处理
-        
-        // 模拟文件处理
+
+        // 模拟文件处理（分步检查取消状态）
         try {
-            Thread.sleep(2000); // 模拟处理时间
+            for (int i = 0; i < 20; i++) {
+                // 检查取消标志
+                if (taskCancelMap.getOrDefault(task.getId(), false)) {
+                    log.info("文件任务检测到取消信号，任务ID: {}", task.getId());
+                    throw new BusinessException("任务已被取消");
+                }
+                Thread.sleep(100); // 模拟处理时间
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException("任务被中断");
         }
-        
+
+        // 再次检查取消标志
+        if (taskCancelMap.getOrDefault(task.getId(), false)) {
+            throw new BusinessException("任务已被取消");
+        }
+
         progress.set(50); // 处理中
-        
+
         // 设置输出文件路径
         String outputFileName = "watermarked_" + System.currentTimeMillis() + ".pdf";
         String outputFilePath = watermarkConfig.getOutput().getPath() + File.separator + outputFileName;
         task.setOutputFilePath(outputFilePath);
-        
+
+        // TODO: 实际需要生成水印文件
+        // 使用 embeddingEngine 对原始文件添加水印并保存到 outputFilePath
+        // 目前只设置路径，实际文件生成功能需要实现
+
         // 更新处理数量
         task.setProcessCount(1L);
         taskMapper.updateById(task);
-        
+
         progress.set(100); // 完成
     }
 
@@ -246,35 +267,50 @@ public class WatermarkTaskServiceImpl extends ServiceImpl<WatermarkTaskMapper, W
      */
     private void executeDatabaseTask(WatermarkTask task, WatermarkTemplate template, AtomicInteger progress) {
         log.info("执行数据库类型水印任务，任务ID: {}", task.getId());
-        
+
         if (task.getDataSourceId() == null) {
             throw new BusinessException("数据库任务需要指定数据源ID");
         }
-        
+
+        // 检查取消标志
+        if (taskCancelMap.getOrDefault(task.getId(), false)) {
+            throw new BusinessException("任务已被取消");
+        }
+
         progress.set(10); // 开始处理
-        
+
         // 这里需要实现具体的数据库处理逻辑
         // 1. 连接数据库
         // 2. 获取需要处理的表和记录
         // 3. 添加数据库水印
         // 4. 更新进度和处理数量
-        
-        progress.set(30);
-        
-        // 模拟数据库处理
+
+        // 模拟数据库处理（分步检查取消状态）
         try {
-            Thread.sleep(3000); // 模拟处理时间
+            for (int i = 0; i < 30; i++) {
+                // 检查取消标志
+                if (taskCancelMap.getOrDefault(task.getId(), false)) {
+                    log.info("数据库任务检测到取消信号，任务ID: {}", task.getId());
+                    throw new BusinessException("任务已被取消");
+                }
+                Thread.sleep(100); // 模拟处理时间
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException("任务被中断");
         }
-        
+
+        // 再次检查取消标志
+        if (taskCancelMap.getOrDefault(task.getId(), false)) {
+            throw new BusinessException("任务已被取消");
+        }
+
         progress.set(70);
-        
+
         // 更新处理数量（模拟处理了1000条记录）
         task.setProcessCount(1000L);
         taskMapper.updateById(task);
-        
+
         progress.set(100); // 完成
     }
 

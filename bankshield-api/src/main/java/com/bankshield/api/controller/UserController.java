@@ -7,8 +7,10 @@ import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.Map;
 
 /**
@@ -19,6 +21,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/user")
+@Validated
 public class UserController {
 
     @Autowired
@@ -50,7 +53,7 @@ public class UserController {
      * 添加用户
      */
     @PostMapping
-    public Result<String> addUser(@RequestBody User user) {
+    public Result<String> addUser(@Valid @RequestBody User user) {
         log.info("添加用户，用户名: {}", user.getUsername());
         return userService.addUser(user);
     }
@@ -78,7 +81,7 @@ public class UserController {
      * 使用RequestBody传递密码，避免在URL参数中暴露敏感信息
      */
     @PostMapping("/login")
-    public Result<String> login(@RequestBody LoginRequest request) {
+    public Result<Map<String, Object>> login(@RequestBody LoginRequest request) {
         log.info("用户登录，用户名: {}", request.getUsername());
         return userService.login(request.getUsername(), request.getPassword());
     }
