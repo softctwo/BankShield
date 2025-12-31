@@ -53,9 +53,10 @@ const routes: RouteRecordRaw[] = [
           noCache: false
         }
       },
+      // 系统管理模块
       {
-        path: '/user',
-        name: 'User',
+        path: '/system/user',
+        name: 'SystemUser',
         component: UserManagement,
         meta: {
           title: '用户管理',
@@ -64,7 +65,6 @@ const routes: RouteRecordRaw[] = [
           noCache: false
         }
       },
-      // 系统管理模块
       {
         path: '/system/role',
         name: 'SystemRole',

@@ -124,7 +124,79 @@ public class WatermarkController {
     public Result<WatermarkExtractLog> extractWatermark(@RequestParam("file") MultipartFile file,
                                                        @RequestParam("operator") String operator) {
         log.info("提取水印，文件名: {}, 操作人: {}", file.getOriginalFilename(), operator);
+
+        // 安全检查：验证上传文件
+        validateUploadedFile(file);
+
         return Result.success(extractService.extractFromFile(file, operator));
+    }
+
+    /**
+     * 验证上传的文件，防止DoS攻击
+     */
+    private void validateUploadedFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("文件不能为空");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+
+        // 检查文件大小（最大10MB）
+        long maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.getSize() > maxSize) {
+            log.error("文件过大: {} bytes, 限制: {} bytes", file.getSize(), maxSize);
+            throw new SecurityException("文件大小超出限制（最大10MB）");
+        }
+
+        // 检查文件扩展名
+        String lowerName = originalFilename.toLowerCase();
+        if (!lowerName.endsWith(".pdf") && !lowerName.endsWith(".docx") &&
+            !lowerName.endsWith(".xlsx") && !lowerName.endsWith(".pptx")) {
+            throw new SecurityException("不支持的文件类型，仅支持PDF、Word、Excel、PowerPoint");
+        }
+
+        // 检查MIME类型
+        String contentType = file.getContentType();
+        if (contentType == null || contentType.trim().isEmpty()) {
+            throw new SecurityException("文件MIME类型不能为空");
+        }
+
+        // 验证MIME类型与扩展名匹配
+        if (lowerName.endsWith(".pdf") && !contentType.equals("application/pdf")) {
+            throw new SecurityException("文件扩展名与MIME类型不匹配");
+        }
+
+        if ((lowerName.endsWith(".docx") || lowerName.endsWith(".xlsx") || lowerName.endsWith(".pptx"))
+            && !contentType.startsWith("application/")) {
+            throw new SecurityException("文件MIME类型无效");
+        }
+
+        // 检查文件名长度
+        if (originalFilename.length() > 255) {
+            throw new IllegalArgumentException("文件名过长");
+        }
+
+        // 检查是否包含危险字符
+        String[] dangerousChars = {"..", "/", "\\", ":", "*", "?", "\"", "<", ">", "|"};
+        for (String dangerous : dangerousChars) {
+            if (originalFilename.contains(dangerous)) {
+                throw new SecurityException("文件名包含非法字符");
+            }
+        }
+
+        // 检查文件内容是否为空
+        try {
+            byte[] fileBytes = file.getBytes();
+            if (fileBytes.length == 0) {
+                throw new SecurityException("文件内容为空");
+            }
+        } catch (IOException e) {
+            log.error("读取文件失败", e);
+            throw new SecurityException("读取文件失败");
+        }
     }
 
     /**
@@ -154,6 +226,17 @@ public class WatermarkController {
     public Result<?> batchExtractWatermark(@RequestParam("files") MultipartFile[] files,
                                           @RequestParam("operator") String operator) {
         log.info("批量提取水印，文件数量: {}, 操作人: {}", files.length, operator);
+
+        // 限制批量文件数量（最多10个）
+        if (files.length > 10) {
+            throw new IllegalArgumentException("批量处理最多支持10个文件");
+        }
+
+        // 验证每个文件
+        for (MultipartFile file : files) {
+            validateUploadedFile(file);
+        }
+
         return Result.success(extractService.batchExtractFromFiles(files, operator));
     }
 

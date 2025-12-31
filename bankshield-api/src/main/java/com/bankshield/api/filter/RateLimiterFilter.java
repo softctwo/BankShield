@@ -41,44 +41,55 @@ public class RateLimiterFilter extends OncePerRequestFilter {
      * 初始化限流器
      */
     private void initializeLimiters() {
-        // 普通查询接口：100次/秒
-        limiters.put("/api/user/list", RateLimiter.create(100.0));
+        // 用户管理接口：100次/秒 (修正路径匹配实际控制器)
         limiters.put("/api/user/page", RateLimiter.create(100.0));
         limiters.put("/api/dept/tree", RateLimiter.create(100.0));
-        limiters.put("/api/role/list", RateLimiter.create(100.0));
+        limiters.put("/api/dept/page", RateLimiter.create(100.0));
+        limiters.put("/api/role/page", RateLimiter.create(100.0));
+        limiters.put("/api/role/enabled", RateLimiter.create(100.0));
         limiters.put("/api/menu/list", RateLimiter.create(100.0));
-        
-        // 数据查询接口：50次/秒
-        limiters.put("/api/classification/asset/list", RateLimiter.create(50.0));
-        limiters.put("/api/classification/asset/page", RateLimiter.create(50.0));
-        limiters.put("/api/masking/rule/list", RateLimiter.create(50.0));
-        
+        limiters.put("/api/menu/tree", RateLimiter.create(100.0));
+
+        // 数据资产接口：50次/秒 (修正路径匹配实际控制器)
+        limiters.put("/api/asset/list", RateLimiter.create(50.0));
+        limiters.put("/api/asset/map/overview", RateLimiter.create(50.0));
+        limiters.put("/api/data-source/page", RateLimiter.create(50.0));
+        limiters.put("/api/data-source/all", RateLimiter.create(50.0));
+
         // 敏感操作接口：10次/秒
-        limiters.put("/api/key/generate", RateLimiter.create(10.0));
-        limiters.put("/api/key/delete", RateLimiter.create(10.0));
-        limiters.put("/api/user/delete", RateLimiter.create(10.0));
-        limiters.put("/api/user/reset-password", RateLimiter.create(10.0));
-        
-        // 导出接口：5次/秒
-        limiters.put("/api/audit/export", RateLimiter.create(5.0));
-        limiters.put("/api/user/export", RateLimiter.create(5.0));
-        limiters.put("/api/classification/asset/export", RateLimiter.create(5.0));
-        
-        // 审计日志查询：20次/秒
-        limiters.put("/api/audit/operation/list", RateLimiter.create(20.0));
+        limiters.put("/api/user", RateLimiter.create(10.0)); // POST/DELETE
+        limiters.put("/api/role", RateLimiter.create(10.0));
+        limiters.put("/api/dept", RateLimiter.create(10.0));
+        limiters.put("/api/menu", RateLimiter.create(10.0));
+        limiters.put("/api/data-source", RateLimiter.create(10.0));
+
+        // 导出接口：5次/秒 (修正路径匹配实际控制器)
+        limiters.put("/api/audit/export/operation", RateLimiter.create(5.0));
+        limiters.put("/api/audit/export/login", RateLimiter.create(5.0));
+        limiters.put("/api/asset/export", RateLimiter.create(5.0));
+
+        // 审计日志查询：20次/秒 (修正路径匹配实际控制器)
         limiters.put("/api/audit/operation/page", RateLimiter.create(20.0));
-        
-        // 监控数据查询：30次/秒
-        limiters.put("/api/monitor/metrics", RateLimiter.create(30.0));
-        limiters.put("/api/monitor/alerts", RateLimiter.create(30.0));
-        
-        // 水印相关接口：15次/秒
-        limiters.put("/api/watermark/create", RateLimiter.create(15.0));
-        limiters.put("/api/watermark/verify", RateLimiter.create(15.0));
-        
-        // 文件上传下载：10次/秒
-        limiters.put("/api/file/upload", RateLimiter.create(10.0));
-        limiters.put("/api/file/download", RateLimiter.create(10.0));
+        limiters.put("/api/audit/login/page", RateLimiter.create(20.0));
+
+        // 监控与告警接口：30次/秒 (修正路径匹配实际控制器)
+        limiters.put("/api/monitor/metrics/current", RateLimiter.create(30.0));
+        limiters.put("/api/monitor/dashboard/stats", RateLimiter.create(30.0));
+        limiters.put("/api/alert/record/page", RateLimiter.create(30.0));
+        limiters.put("/api/alert/rule/page", RateLimiter.create(30.0));
+
+        // 安全与血缘接口：20次/秒
+        limiters.put("/api/security/stats", RateLimiter.create(20.0));
+        limiters.put("/api/security/baseline/check", RateLimiter.create(10.0));
+        limiters.put("/api/lineage/enhanced/discovery/task", RateLimiter.create(10.0));
+
+        // 数据源扫描操作：5次/秒 (敏感操作)
+        limiters.put("/api/data-source/scan", RateLimiter.create(5.0));
+        limiters.put("/api/data-source/rescan", RateLimiter.create(5.0));
+        limiters.put("/api/data-source/test-connection", RateLimiter.create(5.0));
+
+        // 登录接口：严格限流防止暴力破解
+        limiters.put("/api/user/login", RateLimiter.create(5.0));
     }
     
     @Override

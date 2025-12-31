@@ -7,6 +7,7 @@ import com.bankshield.encrypt.entity.KeyRotationHistory;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Insert;
 
 import java.util.List;
 
@@ -39,4 +40,15 @@ public interface KeyRotationHistoryMapper extends BaseMapper<KeyRotationHistory>
             "WHERE rotation_status = 'SUCCESS' " +
             "ORDER BY rotation_time DESC LIMIT #{limit}")
     List<KeyRotationHistory> selectRecentRotations(@Param("limit") int limit);
+    
+    /**
+     * 批量插入轮换历史记录
+     */
+    @Insert({"<script>",
+            "INSERT INTO key_rotation_history (old_key_id, new_key_id, rotation_time, rotation_reason, rotated_by, rotation_status, create_time) VALUES ",
+            "<foreach collection='list' item='item' separator=','>",
+            "(#{item.oldKeyId}, #{item.newKeyId}, #{item.rotationTime}, #{item.rotationReason}, #{item.rotatedBy}, #{item.rotationStatus}, NOW())",
+            "</foreach>",
+            "</script>"})
+    int batchInsert(@Param("list") List<KeyRotationHistory> list);
 }

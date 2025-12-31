@@ -24,7 +24,7 @@ import java.util.Map;
  * @author BankShield
  */
 @Slf4j
-@RestController
+//@RestController
 @RequestMapping("/api/security-scan")
 @Api(tags = "安全扫描管理")
 public class SecurityScanController {

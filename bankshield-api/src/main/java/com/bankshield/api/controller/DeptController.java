@@ -6,6 +6,7 @@ import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class DeptController {
     /**
      * 根据ID获取部门信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<Dept> getDeptById(@PathVariable Long id) {
         log.info("查询部门信息，ID: {}", id);
@@ -35,6 +37,7 @@ public class DeptController {
     /**
      * 分页查询部门列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/page")
     public Result<Page<Dept>> getDeptPage(
             @RequestParam(defaultValue = "1") int page,
@@ -48,6 +51,7 @@ public class DeptController {
     /**
      * 获取部门树形结构
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/tree")
     public Result<List<Dept>> getDeptTree() {
         log.info("获取部门树形结构");
@@ -57,6 +61,7 @@ public class DeptController {
     /**
      * 添加部门
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<String> addDept(@RequestBody Dept dept) {
         log.info("添加部门，部门名称: {}", dept.getDeptName());
@@ -66,6 +71,7 @@ public class DeptController {
     /**
      * 更新部门信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping
     public Result<String> updateDept(@RequestBody Dept dept) {
         log.info("更新部门信息，ID: {}", dept.getId());
@@ -75,6 +81,7 @@ public class DeptController {
     /**
      * 删除部门
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<String> deleteDept(@PathVariable Long id) {
         log.info("删除部门，ID: {}", id);

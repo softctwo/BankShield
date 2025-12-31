@@ -7,10 +7,12 @@ import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,6 +32,7 @@ public class UserController {
     /**
      * 根据ID获取用户信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<User> getUserById(@PathVariable Long id) {
         log.info("查询用户信息，ID: {}", id);
@@ -39,6 +42,7 @@ public class UserController {
     /**
      * 分页查询用户列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/page")
     public Result<Page<User>> getUserPage(
             @RequestParam(defaultValue = "1") int page,
@@ -52,6 +56,7 @@ public class UserController {
     /**
      * 添加用户
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<String> addUser(@Valid @RequestBody User user) {
         log.info("添加用户，用户名: {}", user.getUsername());
@@ -61,6 +66,7 @@ public class UserController {
     /**
      * 更新用户信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping
     public Result<String> updateUser(@RequestBody User user) {
         log.info("更新用户信息，ID: {}", user.getId());
@@ -70,6 +76,7 @@ public class UserController {
     /**
      * 删除用户
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<String> deleteUser(@PathVariable Long id) {
         log.info("删除用户，ID: {}", id);

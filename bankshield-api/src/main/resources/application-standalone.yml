@@ -1,0 +1,56 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: bankshield-api-standalone
+  
+  # 最简数据源配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/bankshield?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+      username: root
+      password: 3f342bb206
+      initial-size: 2
+      max-active: 10
+      min-idle: 2
+      max-wait: 60000
+      test-while-idle: true
+      validation-query: SELECT 1
+
+  # 禁用任务调度
+  task:
+    scheduling:
+      pool:
+        size: 0
+
+# MyBatis Plus 最简配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: AUTO
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.bankshield.api.entity
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.bankshield: DEBUG
+    org.springframework: WARN
+    org.mybatis: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# 禁用所有监控和管理
+management:
+  endpoints:
+    enabled-by-default: false
+  health:
+    enabled: false

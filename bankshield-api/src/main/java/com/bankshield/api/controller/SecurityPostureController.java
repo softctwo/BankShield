@@ -24,7 +24,7 @@ import java.util.Map;
  * 安全态势感知控制器
  */
 @Slf4j
-@RestController
+//@RestController
 @RequestMapping("/api/security")
 @RequiredArgsConstructor
 @Api(tags = "安全态势感知")

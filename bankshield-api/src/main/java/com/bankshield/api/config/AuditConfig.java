@@ -13,8 +13,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 
  * @author BankShield
  */
-@Configuration
-@EnableAsync
+//@Configuration
+//@EnableAsync
 public class AuditConfig implements WebMvcConfigurer {
 
     @Autowired

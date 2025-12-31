@@ -13,6 +13,7 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/lineage/enhanced")
 @Api(tags = "数据血缘增强模块")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class DataLineageEnhancedController {
 
     private final LineageDiscoveryService lineageDiscoveryService;
@@ -439,10 +441,13 @@ public class DataLineageEnhancedController {
             @ApiParam("图表类型") @RequestParam String chartType,
             @ApiParam("图表数据") @RequestBody Map<String, Object> chartData,
             @ApiParam("图表标题") @RequestParam String title) {
-        
+
         try {
-            String filePath = visualizationService.exportVisualizationToHtml(chartType, chartData, title);
-            return CommonResult.success(filePath, "可视化图表导出成功");
+            // 调用服务导出HTML
+            String relativeFilePath = visualizationService.exportVisualizationToHtml(chartType, chartData, title);
+
+            // 返回相对路径，防止暴露服务器内部路径
+            return CommonResult.success(relativeFilePath, "可视化图表导出成功");
         } catch (Exception e) {
             log.error("导出可视化图表失败", e);
             return CommonResult.failed("导出可视化图表失败: " + e.getMessage());

@@ -15,9 +15,9 @@ import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.pdf.PdfWriter;
 // import com.itextpdf.tool.xml.XMLWorkerHelper;  // 需要额外依赖 itextpdf-tool 包
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
+import freemarker.template.*;
+import freemarker.core.*;
+import freemarker.core.Configurable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +27,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 报表生成引擎实现类
@@ -227,19 +228,195 @@ public class ReportGenerationEngineImpl implements ReportGenerationEngine {
     @Override
     public String renderTemplate(String templateContent, Map<String, Object> data) {
         try {
+            // 安全检查：验证模板内容
+            validateTemplateContent(templateContent);
+
+            // 安全数据处理：对数据进行转义和净化
+            Map<String, Object> safeData = sanitizeTemplateData(data);
+
+            // 创建安全的FreeMarker配置
+            Configuration safeConfig = createSecureFreemarkerConfig();
+
             // 创建FreeMarker模板
-            Template template = new Template("reportTemplate", new StringReader(templateContent), freemarkerConfig);
-            
+            Template template = new Template("reportTemplate", new StringReader(templateContent), safeConfig);
+
             // 渲染模板
             StringWriter writer = new StringWriter();
-            template.process(data, writer);
-            
+            template.process(safeData, writer);
+
             return writer.toString();
-            
+
         } catch (TemplateException | IOException e) {
             log.error("模板渲染失败: {}", e.getMessage(), e);
             throw new RuntimeException("模板渲染失败", e);
         }
+    }
+
+    /**
+     * 验证模板内容，防止SSTI攻击
+     */
+    private void validateTemplateContent(String templateContent) {
+        if (templateContent == null || templateContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("模板内容不能为空");
+        }
+
+        // 检查危险模式
+        String[] dangerousPatterns = {
+            "${",                    // 表达式替换
+            "#{",                    // 数字替换
+            "<#",                    // FreeMarker标签
+            "<%",                    // JSP标签
+            "${__",                  // Python-style expressions
+            "${self",                // Self-reference
+            "${main",                // Main reference
+            "${root",                // Root reference
+            "${globals",             // Globals reference
+            "${Session",             // Session access
+            "${Application}",        // Application access
+            "${Request}",            // Request access
+            "${Response}",           // Response access
+            "${config}",             // Config access
+            "freemarker.template",   // Java class access
+            "getClass()",            // Class loading
+            "getClassLoader()",      // ClassLoader access
+            "Runtime.exec",          // Command execution
+            "ProcessBuilder",        // Process building
+            "java.lang.Class",       // Class manipulation
+            "java.lang.Runtime",     // Runtime access
+            "java.lang.Process",     // Process access
+            "org.apache",            // Apache classes
+            "java.io.File",          // File access
+            "java.net.URL",          // URL access
+            "java.net.Socket",       // Socket access
+            "javax.script",          // Script engines
+            "jruby",                 // JRuby
+            "groovy.lang",           // Groovy
+            "python",                // Python
+            "javascript:",           // JavaScript
+            "eval(",                 // Eval function
+            "executeQuery(",         // SQL query
+            "Statement",             // SQL statement
+            "PreparedStatement",     // Prepared statement
+            "Connection"             // DB connection
+        };
+
+        String lowerContent = templateContent.toLowerCase();
+        for (String pattern : dangerousPatterns) {
+            if (lowerContent.contains(pattern.toLowerCase())) {
+                log.error("检测到危险的模板模式: {}", pattern);
+                throw new SecurityException("模板包含危险内容: " + pattern);
+            }
+        }
+
+        // 检查模板长度（防止过大的模板）
+        if (templateContent.length() > 100000) {
+            throw new IllegalArgumentException("模板内容过长，最大允许100KB");
+        }
+    }
+
+    /**
+     * 净化模板数据，防止数据注入
+     */
+    private Map<String, Object> sanitizeTemplateData(Map<String, Object> data) {
+        if (data == null) {
+            return new HashMap<>();
+        }
+
+        Map<String, Object> safeData = new HashMap<>();
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            safeData.put(entry.getKey(), sanitizeValue(entry.getValue()));
+        }
+
+        return safeData;
+    }
+
+    /**
+     * 净化单个值
+     */
+    private Object sanitizeValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof String) {
+            return sanitizeString((String) value);
+        } else if (value instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapValue = (Map<String, Object>) value;
+            return sanitizeTemplateData(mapValue);
+        } else if (value instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> listValue = (List<Object>) value;
+            List<Object> safeList = new ArrayList<>();
+            for (Object item : listValue) {
+                safeList.add(sanitizeValue(item));
+            }
+            return safeList;
+        } else if (value instanceof Number || value instanceof Boolean) {
+            // 数字和布尔值是安全的
+            return value;
+        } else {
+            // 其他类型转换为字符串并转义
+            return sanitizeString(value.toString());
+        }
+    }
+
+    /**
+     * 转义字符串中的危险字符
+     */
+    private String sanitizeString(String str) {
+        if (str == null) {
+            return null;
+        }
+
+        // 转义HTML特殊字符
+        str = str.replace("&", "&amp;")
+                 .replace("<", "&lt;")
+                 .replace(">", "&gt;")
+                 .replace("\"", "&quot;")
+                 .replace("'", "&#x27;");
+
+        // 转义FreeMarker特殊字符
+        str = str.replace("${", "&#36;{")
+                 .replace("#{", "&#35;{");
+
+        // 移除控制字符
+        str = str.replaceAll("[\\x00-\\x1F\\x7F]", "");
+
+        return str;
+    }
+
+    /**
+     * 创建安全的FreeMarker配置
+     */
+    private Configuration createSecureFreemarkerConfig() {
+        Configuration config = new Configuration(Configuration.VERSION_2_3_31);
+
+        // 设置模板加载器为空（仅从字符串创建）
+        config.setTemplateLoader(new StringTemplateLoader());
+
+        // 设置默认编码
+        config.setDefaultEncoding("UTF-8");
+
+        // 禁用对某些内置函数的支持
+        try {
+            // 获取当前配置
+            Configurable cfg = config;
+
+            // 设置模板异常处理
+            cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+
+            // 禁用显示友好错误信息
+            cfg.setLogTemplateExceptions(false);
+
+            // 限制API可用性
+            config.setAPIBuiltinEnabled(false);
+
+        } catch (Exception e) {
+            log.warn("无法完全配置FreeMarker安全设置: {}", e.getMessage());
+        }
+
+        return config;
     }
     
     @Override

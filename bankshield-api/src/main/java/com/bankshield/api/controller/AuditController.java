@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @RestController
 @RequestMapping("/api/audit")
+@PreAuthorize("hasRole('ADMIN')")
 public class AuditController {
 
     @Autowired

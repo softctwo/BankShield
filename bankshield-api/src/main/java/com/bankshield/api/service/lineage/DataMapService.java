@@ -6,25 +6,22 @@ import com.bankshield.api.entity.DataSource;
 import com.bankshield.api.mapper.DataFlowMapper;
 import com.bankshield.api.mapper.DataMapMapper;
 import com.bankshield.api.mapper.DataSourceMapper;
-import com.bankshield.common.exception.BusinessExceptionUtils;
-import lombok.RequiredArgsConstructor;
+import com.bankshield.common.exception.BusinessException;
+import com.bankshield.common.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 数据地图服务
- * 生成和管理数据地图，提供数据资产的可视化展示
+ * 
+ * @author BankShield
  */
+@Slf4j
 @Service
 public class DataMapService {
-
-    private static final Logger log = LoggerFactory.getLogger(DataMapService.class);
 
     private final DataMapMapper dataMapMapper;
     private final DataFlowMapper dataFlowMapper;
@@ -60,7 +57,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成全局数据地图失败", e);
-            BusinessExceptionUtils.throwBusinessOperation("生成全局数据地图", e.getMessage());
+            throw new BusinessException(ResultCode.BUSINESS_ERROR.getCode(), "生成全局数据地图失败: " + e.getMessage(), e);
         }
     }
 
@@ -88,7 +85,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成业务域数据地图失败: {}", businessDomain, e);
-            BusinessExceptionUtils.throwBusinessOperation("生成业务域数据地图", e.getMessage());
+            throw new BusinessException(ResultCode.BUSINESS_ERROR.getCode(), "生成业务域数据地图失败: " + e.getMessage(), e);
         }
     }
 
@@ -121,7 +118,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成数据源数据地图失败: {}", dataSourceId, e);
-            BusinessExceptionUtils.throwBusinessOperation("生成数据源数据地图", e.getMessage());
+            throw new BusinessException(ResultCode.BUSINESS_ERROR.getCode(), "生成数据源数据地图失败: " + e.getMessage(), e);
         }
     }
 
@@ -153,7 +150,7 @@ public class DataMapService {
             
         } catch (Exception e) {
             log.error("生成自定义数据地图失败: {}", mapName, e);
-            BusinessExceptionUtils.throwBusinessOperation("生成自定义数据地图", e.getMessage());
+            throw new BusinessException(ResultCode.BUSINESS_ERROR.getCode(), "生成自定义数据地图失败: " + e.getMessage(), e);
         }
     }
 

@@ -47,11 +47,11 @@
     </properties>
 
     <modules>
-        <module>bankshield-common</module>
         <module>bankshield-encrypt</module>
         <module>bankshield-api</module>
         <module>bankshield-ai</module>
         <module>bankshield-lineage</module>
+        <module>bankshield-auth</module>
     </modules>
 
     <dependencyManagement>

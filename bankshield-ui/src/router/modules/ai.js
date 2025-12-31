@@ -13,6 +13,16 @@ const aiRouter = {
   },
   children: [
     {
+      path: '/ai/analysis',
+      name: 'AIAnalysis',
+      component: () => import('@/views/ai/analysis/index.vue'),
+      meta: {
+        title: 'AI智能分析',
+        icon: 'TrendCharts',
+        affix: true
+      }
+    },
+    {
       path: '/ai/dashboard',
       name: 'AIDashboard',
       component: () => import('@/views/ai/AIDashboard.vue'),

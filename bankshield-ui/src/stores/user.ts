@@ -46,6 +46,19 @@ export const useUserStore = defineStore('user', () => {
     clearUserInfo()
   }
 
+  // 登录方法
+  const login = async (loginData: { username: string; token: string; roles: string[] }) => {
+    setToken(loginData.token)
+    setUserInfo({
+      username: loginData.username,
+      roles: loginData.roles,
+      permissions: [], // 可以根据需要添加权限
+      avatar: '',
+      email: '',
+      phone: ''
+    })
+  }
+
   // 初始化时检查 token 是否过期
   const initTokenExpiry = () => {
     const storedExpiry = localStorage.getItem('tokenExpiry')
@@ -74,6 +87,7 @@ export const useUserStore = defineStore('user', () => {
     setToken,
     setUserInfo,
     clearUserInfo,
-    logout
+    logout,
+    login
   }
 })

@@ -7,6 +7,7 @@ import com.bankshield.common.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.cos.COSDocument;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -50,6 +51,9 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
 
         // 使用try-with-resources确保资源正确关闭
         try (PDDocument document = PDDocument.load(inputStream)) {
+            // 安全检查：限制PDF页数和对象数量
+            validatePdfStructure(document);
+
             // 提取文本内容
             PDFTextStripper textStripper = new PDFTextStripper();
             String textContent = textStripper.getText(document);
@@ -63,6 +67,31 @@ public class WatermarkExtractEngineImpl implements WatermarkExtractEngine {
         } catch (Exception e) {
             log.error("从PDF文件中提取水印失败", e);
             throw new BusinessException("PDF水印提取失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证PDF结构，防止PDF炸弹攻击
+     */
+    private void validatePdfStructure(PDDocument document) {
+        // 检查页数（最多100页）
+        int maxPages = 100;
+        if (document.getNumberOfPages() > maxPages) {
+            throw new SecurityException("PDF页数过多（最多" + maxPages + "页），可能存在安全风险");
+        }
+
+        // 检查对象数量
+        int maxObjects = 10000;
+        try {
+            COSDocument cosDoc = document.getDocument();
+            if (cosDoc != null) {
+                int objectCount = cosDoc.getObjects().size();
+                if (objectCount > maxObjects) {
+                    throw new SecurityException("PDF对象数量过多（最多" + maxObjects + "个），可能存在安全风险");
+                }
+            }
+        } catch (Exception e) {
+            log.warn("无法获取PDF对象数量，跳过检查: {}", e.getMessage());
         }
     }
 

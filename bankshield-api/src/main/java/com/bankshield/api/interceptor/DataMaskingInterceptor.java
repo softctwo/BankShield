@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.executor.resultset.ResultSetHandler;
 import org.apache.ibatis.plugin.*;
-import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.sql.Statement;
@@ -17,7 +16,7 @@ import java.util.*;
  * 自动对查询结果中的敏感数据进行脱敏处理
  */
 @Slf4j
-@Component
+//@Component
 @Intercepts({
     @Signature(type = ResultSetHandler.class, method = "handleResultSets", args = {Statement.class})
 })

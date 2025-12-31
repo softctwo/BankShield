@@ -189,28 +189,59 @@ public class ReportGenerationTaskServiceImpl extends ServiceImpl<ReportGeneratio
     
     private String saveReportFile(byte[] content, String fileName, String fileType) {
         try {
+            // 验证文件类型，防止非法文件类型
+            validateFileType(fileType);
+
             // 净化文件名，防止路径穿越攻击
             String sanitizedFileName = sanitizeFileName(fileName);
 
             // 确保输出目录存在
-            File outputDir = new File("reports");
+            File outputDir = new File("reports").getCanonicalFile(); // 使用getCanonicalPath防止符号链接攻击
             if (!outputDir.exists()) {
                 outputDir.mkdirs();
             }
 
-            // 生成文件路径
+            // 生成安全的文件名：使用UUID + 时间戳
             String timestamp = DateUtil.format(LocalDateTime.now(), "yyyyMMdd_HHmmss");
-            String filePath = outputDir.getAbsolutePath() + File.separator + sanitizedFileName + "_" + timestamp + "." + fileType;
+            String safeFileName = String.format("%s_%s.%s", sanitizedFileName, timestamp, fileType);
 
-            // 保存文件 - 使用文件路径
-            java.nio.file.Files.write(Paths.get(filePath), content);
+            // 验证最终路径在允许的目录内
+            File targetFile = new File(outputDir, safeFileName).getCanonicalFile();
+            if (!targetFile.getParentFile().equals(outputDir)) {
+                log.error("检测到路径穿越攻击尝试: {}", targetFile.getPath());
+                throw new SecurityException("无效的文件路径");
+            }
 
-            log.info("报表文件保存成功: {}", filePath);
-            return filePath;
+            // 保存文件
+            java.nio.file.Files.write(targetFile.toPath(), content);
+
+            log.info("报表文件保存成功: {}", targetFile.getAbsolutePath());
+            return targetFile.getAbsolutePath();
 
         } catch (Exception e) {
             log.error("保存报表文件失败: {}", e.getMessage(), e);
             throw new RuntimeException("保存报表文件失败", e);
+        }
+    }
+
+    /**
+     * 验证文件类型，防止恶意文件
+     */
+    private void validateFileType(String fileType) {
+        if (fileType == null || fileType.trim().isEmpty()) {
+            throw new IllegalArgumentException("文件类型不能为空");
+        }
+
+        // 只允许特定的文件类型
+        String lowerType = fileType.toLowerCase();
+        if (!lowerType.equals("pdf") && !lowerType.equals("html") &&
+            !lowerType.equals("xlsx") && !lowerType.equals("docx")) {
+            throw new SecurityException("不支持的文件类型: " + fileType);
+        }
+
+        // 防止空字节攻击
+        if (fileType.contains("\0")) {
+            throw new SecurityException("文件类型包含非法字符");
         }
     }
 

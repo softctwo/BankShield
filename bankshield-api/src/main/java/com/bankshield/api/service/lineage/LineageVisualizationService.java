@@ -4,6 +4,7 @@ import com.bankshield.api.entity.DataFlow;
 import com.bankshield.api.entity.DataMap;
 import com.bankshield.api.mapper.DataFlowMapper;
 import com.bankshield.api.mapper.DataMapMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,8 @@ public class LineageVisualizationService {
     private final DataFlowMapper dataFlowMapper;
     private final DataMapMapper dataMapMapper;
     private final DataMapService dataMapService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 生成血缘关系图（ECharts格式）
@@ -158,22 +161,180 @@ public class LineageVisualizationService {
      */
     public String exportVisualizationToHtml(String chartType, Map<String, Object> chartData, String title) {
         try {
+            // 安全检查：验证输入参数
+            validateExportParameters(chartType, chartData, title);
+
+            // 净化输入数据
+            String safeTitle = sanitizeTitle(title);
+            String safeChartType = sanitizeChartType(chartType);
+            Map<String, Object> safeChartData = sanitizeChartData(chartData);
+
+            // 使用安全的临时目录
+            Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "lineage_" + chartType + "_" + timestamp + ".html";
-            String filePath = "/tmp/" + fileName;
-            
-            String htmlContent = generateHtmlContent(chartType, chartData, title);
-            
-            try (FileWriter writer = new FileWriter(filePath)) {
-                writer.write(htmlContent);
+            String fileName = "lineage_" + safeChartType + "_" + timestamp + ".html";
+            Path filePath = tempDir.resolve(fileName).normalize();
+
+            // 验证路径在临时目录内
+            if (!filePath.getParent().equals(tempDir)) {
+                throw new SecurityException("无效的文件路径");
             }
-            
-            log.info("可视化图表导出完成: {}", filePath);
-            return filePath;
-            
+
+            // 生成HTML内容
+            String htmlContent = generateHtmlContent(safeChartType, safeChartData, safeTitle);
+
+            // 写入文件
+            Files.write(filePath, htmlContent.getBytes(StandardCharsets.UTF_8));
+
+            // 返回相对路径而不是绝对路径
+            String relativePath = fileName;
+            log.info("可视化图表导出完成: {}", relativePath);
+            return relativePath;
+
         } catch (IOException e) {
             log.error("导出可视化图表失败", e);
             throw new RuntimeException("导出可视化图表失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 验证导出参数
+     */
+    private void validateExportParameters(String chartType, Map<String, Object> chartData, String title) {
+        if (chartType == null || chartType.trim().isEmpty()) {
+            throw new IllegalArgumentException("图表类型不能为空");
+        }
+
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("标题不能为空");
+        }
+
+        if (chartData == null || chartData.isEmpty()) {
+            throw new IllegalArgumentException("图表数据不能为空");
+        }
+
+        // 验证图表类型
+        String lowerType = chartType.toLowerCase();
+        if (!lowerType.equals("lineage") && !lowerType.equals("impact") &&
+            !lowerType.equals("flow") && !lowerType.equals("traceability")) {
+            throw new SecurityException("不支持的图表类型: " + chartType);
+        }
+
+        // 限制标题长度
+        if (title.length() > 200) {
+            throw new IllegalArgumentException("标题过长，最大允许200字符");
+        }
+
+        // 限制数据大小
+        if (chartData.size() > 1000) {
+            throw new IllegalArgumentException("图表数据过大");
+        }
+    }
+
+    /**
+     * 净化图表类型
+     */
+    private String sanitizeChartType(String chartType) {
+        // 移除所有特殊字符，只保留字母和数字
+        return chartType.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
+    }
+
+    /**
+     * 净化标题
+     */
+    private String sanitizeTitle(String title) {
+        if (title == null) {
+            return "未命名图表";
+        }
+
+        // 转义HTML特殊字符
+        title = title.replace("&", "&amp;")
+                     .replace("<", "&lt;")
+                     .replace(">", "&gt;")
+                     .replace("\"", "&quot;")
+                     .replace("'", "&#x27;");
+
+        // 移除脚本标签
+        title = title.replaceAll("(?i)<script", "&lt;script")
+                     .replaceAll("(?i)</script>", "&lt;/script&gt;");
+
+        // 移除JavaScript协议
+        title = title.replaceAll("(?i)javascript:", "java-script:");
+
+        // 移除控制字符
+        title = title.replaceAll("[\\x00-\\x1F\\x7F]", "");
+
+        return title.trim();
+    }
+
+    /**
+     * 净化图表数据
+     */
+    private Map<String, Object> sanitizeChartData(Map<String, Object> chartData) {
+        Map<String, Object> safeData = new HashMap<>();
+        for (Map.Entry<String, Object> entry : chartData.entrySet()) {
+            safeData.put(sanitizeKey(entry.getKey()), sanitizeValue(entry.getValue()));
+        }
+        return safeData;
+    }
+
+    /**
+     * 净化键名
+     */
+    private String sanitizeKey(String key) {
+        if (key == null) {
+            return "unknown";
+        }
+        // 只保留字母、数字和下划线
+        return key.replaceAll("[^a-zA-Z0-9_]", "");
+    }
+
+    /**
+     * 净化值
+     */
+    private Object sanitizeValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof String) {
+            String str = (String) value;
+            // 转义HTML和JavaScript特殊字符
+            str = str.replace("&", "&amp;")
+                     .replace("<", "&lt;")
+                     .replace(">", "&gt;")
+                     .replace("\"", "&quot;")
+                     .replace("'", "&#x27;")
+                     .replace("\\", "\\\\")
+                     .replace("\n", "\\n")
+                     .replace("\r", "\\r")
+                     .replace("\t", "\\t");
+
+            // 移除脚本标签
+            str = str.replaceAll("(?i)<script", "&lt;script")
+                     .replaceAll("(?i)</script>", "&lt;/script&gt;");
+
+            // 移除JavaScript协议
+            str = str.replaceAll("(?i)javascript:", "java-script:");
+
+            return str;
+        } else if (value instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> mapValue = (Map<String, Object>) value;
+            return sanitizeChartData(mapValue);
+        } else if (value instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> listValue = (List<Object>) value;
+            List<Object> safeList = new ArrayList<>();
+            for (Object item : listValue) {
+                safeList.add(sanitizeValue(item));
+            }
+            return safeList;
+        } else if (value instanceof Number || value instanceof Boolean) {
+            return value;
+        } else {
+            // 其他类型转换为字符串并转义
+            return sanitizeValue(value.toString());
         }
     }
 
@@ -831,8 +992,13 @@ public class LineageVisualizationService {
      * 转换为JSON字符串
      */
     private String convertToJson(Map<String, Object> data) {
-        // 这里应该使用JSON序列化库
-        // 简化处理，返回基本格式
-        return data.toString().replace("=", ":");
+        try {
+            // 使用安全的JSON序列化，避免XSS
+            return objectMapper.writeValueAsString(data);
+        } catch (Exception e) {
+            log.error("JSON序列化失败", e);
+            // 返回空的JSON对象作为兜底
+            return "{}";
+        }
     }
 }

@@ -80,4 +80,10 @@ public interface EncryptionKeyMapper extends BaseMapper<EncryptionKey> {
      */
     @Select("SELECT COUNT(*) FROM encrypt_key WHERE key_status = 'INACTIVE' AND deleted = 0")
     int countInactiveKeys();
+    
+    /**
+     * 根据密钥名称查询密钥
+     */
+    @Select("SELECT * FROM encrypt_key WHERE key_name = #{keyName} AND deleted = 0 LIMIT 1")
+    EncryptionKey selectByName(@Param("keyName") String keyName);
 }

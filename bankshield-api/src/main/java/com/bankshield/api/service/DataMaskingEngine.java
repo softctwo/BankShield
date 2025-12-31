@@ -21,7 +21,7 @@ import java.util.*;
  * 实现各种脱敏算法，提供统一的数据脱敏接口
  */
 @Slf4j
-@Component
+//@Component
 @RequiredArgsConstructor
 public class DataMaskingEngine {
 

@@ -1,8 +1,10 @@
 package com.bankshield.api.websocket;
 
 import com.bankshield.api.entity.AlertRecord;
+import com.bankshield.api.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
@@ -18,23 +20,49 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
-@ServerEndpoint("/ws/alerts/{userId}")
+@ServerEndpoint(value = "/ws/alerts/{userId}", configurator = WebSocketAuthConfigurator.class)
 public class AlertWebSocketHandler {
 
     // 存储所有连接的WebSocket会话
     private static final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
-    
+
     // JSON序列化器
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * 连接建立时调用
+     * 增加身份验证检查
      */
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) {
+        // 从握手属性中获取已验证的用户信息
+        String authenticatedUserId = (String) session.getUserProperties().get("authenticatedUserId");
+
+        // 验证用户身份：确保路径中的userId与token中的userId一致
+        if (authenticatedUserId == null) {
+            log.warn("WebSocket连接被拒绝：未通过身份验证, userId={}", userId);
+            try {
+                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "身份验证失败"));
+            } catch (IOException e) {
+                log.error("关闭未授权WebSocket连接失败", e);
+            }
+            return;
+        }
+
+        // 确保请求的userId与token中的用户匹配
+        if (!authenticatedUserId.equals(userId)) {
+            log.warn("WebSocket连接被拒绝：用户ID不匹配, 请求userId={}, 认证userId={}", userId, authenticatedUserId);
+            try {
+                session.close(new CloseReason(CloseReason.CloseCodes.VIOLATED_POLICY, "用户身份不匹配"));
+            } catch (IOException e) {
+                log.error("关闭未授权WebSocket连接失败", e);
+            }
+            return;
+        }
+
         sessions.put(userId, session);
         log.info("WebSocket连接建立: userId={}", userId);
-        
+
         // 发送连接成功消息
         sendMessage(session, "CONNECTED", "连接成功");
     }

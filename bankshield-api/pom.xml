@@ -16,11 +16,13 @@
 
     <dependencies>
         <!-- 公共模块 -->
+        <!--
         <dependency>
             <groupId>com.bankshield</groupId>
             <artifactId>bankshield-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        -->
 
         <!-- Spring Boot Web -->
         <dependency>

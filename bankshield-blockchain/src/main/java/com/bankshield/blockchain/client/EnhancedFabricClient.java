@@ -11,6 +11,7 @@ import org.hyperledger.fabric.sdk.*;
 import org.hyperledger.fabric.sdk.security.CryptoSuite;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -309,8 +310,16 @@ public class EnhancedFabricClient {
         installProposal.setChaincodeName(CHAINCODE_NAME);
         installProposal.setChaincodeVersion(CHAINCODE_VERSION);
         installProposal.setChaincodeLanguage(TransactionRequest.Type.GO_LANG);
-        installProposal.setChaincodePath("/path/to/chaincode");
-        installProposal.setChaincodeSource(new File(".."));
+
+        // 安全检查：使用绝对路径而非相对路径
+        String chaincodePath = System.getProperty("bankshield.chaincode.path", "/opt/bankshield/chaincode");
+        Path chaincodeDir = Paths.get(chaincodePath).normalize().toAbsolutePath();
+
+        // 验证链码目录路径
+        validateChaincodePath(chaincodeDir);
+
+        installProposal.setChaincodePath(chaincodeDir.toString());
+        installProposal.setChaincodeSource(chaincodeDir.toFile());
 
         // 发送给所有Peer
         Collection<Peer> peers = new ArrayList<>();
@@ -346,7 +355,21 @@ public class EnhancedFabricClient {
 
         // 背书策略：2/3多数
         ChaincodeEndorsementPolicy policy = new ChaincodeEndorsementPolicy();
-        policy.fromYAMLFile(new File("endorsement-policy.yaml"));
+
+        // 安全检查：使用绝对路径而非相对路径
+        String policyPath = System.getProperty("bankshield.endorsement.policy.path", "/opt/bankshield/config/endorsement-policy.yaml");
+        Path policyFile = Paths.get(policyPath).normalize().toAbsolutePath();
+
+        // 验证策略文件路径
+        validateEndorsementPolicyPath(policyFile);
+
+        // 检查文件是否存在且可读
+        if (!Files.exists(policyFile) || !Files.isReadable(policyFile)) {
+            log.error("背书策略文件不存在或不可读: {}", policyFile);
+            throw new IllegalStateException("背书策略文件不存在或不可读: " + policyFile);
+        }
+
+        policy.fromYAMLFile(policyFile.toFile());
         instantiateProposal.setChaincodeEndorsementPolicy(policy);
 
         // 发送给所有组织的Peer
@@ -378,6 +401,56 @@ public class EnhancedFabricClient {
             gateway.close();
             log.info("Fabric网关连接已关闭");
         }
+    }
+
+    /**
+     * 验证链码目录路径，防止路径穿越攻击
+     */
+    private void validateChaincodePath(Path chaincodeDir) {
+        // 检查路径是否为绝对路径
+        if (!chaincodeDir.isAbsolute()) {
+            throw new SecurityException("链码路径必须是绝对路径");
+        }
+
+        // 检查是否包含".."或"~"等特殊字符
+        String pathStr = chaincodeDir.toString();
+        if (pathStr.contains("..") || pathStr.contains("~")) {
+            throw new SecurityException("链码路径不能包含特殊字符（.., ~等）");
+        }
+
+        // 验证路径是否在允许的目录内
+        Path allowedBasePath = Paths.get("/opt/bankshield/chaincode").normalize().toAbsolutePath();
+        if (!chaincodeDir.startsWith(allowedBasePath)) {
+            log.error("链码路径不在允许的目录内: {}, 允许目录: {}", chaincodeDir, allowedBasePath);
+            throw new SecurityException("链码路径不在允许的目录内");
+        }
+
+        log.info("链码路径验证通过: {}", chaincodeDir);
+    }
+
+    /**
+     * 验证背书策略文件路径，防止路径穿越攻击
+     */
+    private void validateEndorsementPolicyPath(Path policyFile) {
+        // 检查路径是否为绝对路径
+        if (!policyFile.isAbsolute()) {
+            throw new SecurityException("背书策略文件路径必须是绝对路径");
+        }
+
+        // 检查是否包含".."或"~"等特殊字符
+        String pathStr = policyFile.toString();
+        if (pathStr.contains("..") || pathStr.contains("~")) {
+            throw new SecurityException("背书策略文件路径不能包含特殊字符（.., ~等）");
+        }
+
+        // 验证路径是否在允许的目录内
+        Path allowedBasePath = Paths.get("/opt/bankshield/config").normalize().toAbsolutePath();
+        if (!policyFile.getParent().startsWith(allowedBasePath)) {
+            log.error("背书策略文件路径不在允许的目录内: {}, 允许目录: {}", policyFile, allowedBasePath);
+            throw new SecurityException("背书策略文件路径不在允许的目录内");
+        }
+
+        log.info("背书策略文件路径验证通过: {}", policyFile);
     }
 
     /**

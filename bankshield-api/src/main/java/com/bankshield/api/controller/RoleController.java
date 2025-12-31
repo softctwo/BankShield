@@ -6,6 +6,7 @@ import com.bankshield.common.result.Result;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class RoleController {
     /**
      * 根据ID获取角色信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public Result<Role> getRoleById(@PathVariable Long id) {
         log.info("查询角色信息，ID: {}", id);
@@ -35,6 +37,7 @@ public class RoleController {
     /**
      * 分页查询角色列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/page")
     public Result<Page<Role>> getRolePage(
             @RequestParam(defaultValue = "1") int page,
@@ -48,6 +51,7 @@ public class RoleController {
     /**
      * 获取所有启用的角色列表
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/enabled")
     public Result<List<Role>> getAllEnabledRoles() {
         log.info("获取所有启用的角色列表");
@@ -57,6 +61,7 @@ public class RoleController {
     /**
      * 添加角色
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<String> addRole(@RequestBody Role role) {
         log.info("添加角色，角色名称: {}", role.getRoleName());
@@ -66,6 +71,7 @@ public class RoleController {
     /**
      * 更新角色信息
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping
     public Result<String> updateRole(@RequestBody Role role) {
         log.info("更新角色信息，ID: {}", role.getId());
@@ -75,6 +81,7 @@ public class RoleController {
     /**
      * 删除角色
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<String> deleteRole(@PathVariable Long id) {
         log.info("删除角色，ID: {}", id);

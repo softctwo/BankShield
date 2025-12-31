@@ -284,15 +284,14 @@ public class LineageDiscoveryService {
      * 判断发现方法是否更可靠
      */
     private boolean isMoreReliableMethod(String newMethod, String existingMethod) {
-        // 方法可靠性排序
-        Map<String, Integer> reliabilityScore = Map.of(
-            "SQL_PARSE", 4,
-            "METADATA", 3,
-            "LOG_ANALYSIS", 2,
-            "ML_INFERENCE", 1
-        );
-        
-        return reliabilityScore.getOrDefault(newMethod, 0) > 
+        // 方法可靠性排序（使用HashMap以兼容Java 8）
+        Map<String, Integer> reliabilityScore = new HashMap<>();
+        reliabilityScore.put("SQL_PARSE", 4);
+        reliabilityScore.put("METADATA", 3);
+        reliabilityScore.put("LOG_ANALYSIS", 2);
+        reliabilityScore.put("ML_INFERENCE", 1);
+
+        return reliabilityScore.getOrDefault(newMethod, 0) >
                reliabilityScore.getOrDefault(existingMethod, 0);
     }
 

@@ -1,7 +1,6 @@
 package com.bankshield.api.config;
 
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -15,7 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 
  * @author BankShield
  */
-@Configuration
+//@Configuration
 public class AsyncConfig implements AsyncConfigurer {
 
     @Override

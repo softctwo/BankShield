@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,7 +45,9 @@ public class DataSource implements Serializable {
 
     /**
      * 连接配置(JSON)
+     * 使用 @JsonIgnore 防止在 API 响应中暴露敏感凭据信息
      */
+    @JsonIgnore
     private String connectionConfig;
 
     /**

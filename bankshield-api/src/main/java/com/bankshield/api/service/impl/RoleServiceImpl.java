@@ -1,30 +1,28 @@
 package com.bankshield.api.service.impl;
 
 import com.bankshield.api.entity.Role;
-import com.bankshield.common.security.SecurityUtils;
+import com.bankshield.api.entity.User;
 import com.bankshield.api.entity.UserRole;
 import com.bankshield.api.mapper.RoleMapper;
 import com.bankshield.api.mapper.UserMapper;
 import com.bankshield.api.mapper.UserRoleMapper;
 import com.bankshield.api.service.RoleCheckService;
 import com.bankshield.api.service.RoleService;
+import com.bankshield.api.utils.SecurityUtils;
 import com.bankshield.common.exception.BusinessException;
 import com.bankshield.common.result.Result;
 import com.bankshield.common.result.ResultCode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 角色服务实现类
@@ -34,20 +32,26 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements RoleService {
 
-    private final RoleMapper roleMapper;
-    private final UserMapper userMapper;
-    private final UserRoleMapper userRoleMapper;
-    private final RoleCheckService roleCheckService;
+    @Autowired
+    private RoleMapper roleMapper;
+    
+    @Autowired
+    private UserMapper userMapper;
+    
+    @Autowired
+    private UserRoleMapper userRoleMapper;
+    
+    @Autowired
+    private RoleCheckService roleCheckService;
 
     @Override
     public Result<Role> getRoleById(Long id) {
         try {
             Role role = this.getById(id);
             if (role == null) {
-                return Result.error(ResultCode.ROLE_NOT_FOUND);
+                return Result.error(1111, "角色不存在");
             }
             return Result.success(role);
         } catch (Exception e) {
@@ -115,7 +119,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Role::getRoleCode, role.getRoleCode());
             if (this.count(queryWrapper) > 0) {
-                return Result.error(ResultCode.ROLE_EXIST);
+                return Result.error(1111, "角色编码已存在");
             }
 
             // 设置默认值
@@ -155,7 +159,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             // 检查角色是否存在
             Role existingRole = this.getById(role.getId());
             if (existingRole == null) {
-                return Result.error(ResultCode.ROLE_NOT_FOUND);
+                return Result.error(1111, "角色不存在");
             }
 
             // 如果修改了角色编码，检查新编码是否已存在
@@ -163,7 +167,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
                 queryWrapper.eq(Role::getRoleCode, role.getRoleCode());
                 if (this.count(queryWrapper) > 0) {
-                    return Result.error(ResultCode.ROLE_EXIST);
+                    return Result.error(1111, "角色编码已存在");
                 }
             }
 
@@ -195,7 +199,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             // 检查角色是否存在
             Role role = this.getById(id);
             if (role == null) {
-                return Result.error(ResultCode.ROLE_NOT_FOUND);
+                return Result.error(1111, "角色不存在");
             }
 
             // 检查角色是否被用户使用，如果有用户关联则不允许删除
@@ -231,19 +235,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
 
             // 检查用户是否存在
             if (userMapper.selectById(userId) == null) {
-                return Result.error(ResultCode.USER_NOT_FOUND);
+                return Result.error(1111, "用户不存在");
             }
 
             // 检查角色是否存在
             Role role = this.getById(roleId);
             if (role == null) {
-                return Result.error(ResultCode.ROLE_NOT_FOUND);
+                return Result.error(1111, "角色不存在");
             }
 
             // 检查角色分配是否违反三权分立原则
             boolean canAssign = roleCheckService.checkRoleAssignment(userId, role.getRoleCode());
             if (!canAssign) {
-                return Result.error(ResultCode.ROLE_MUTEX_CONFLICT, "角色分配违反三权分立原则");
+                return Result.error(1111, "角色分配违反三权分立原则");
             }
 
             // 执行实际的角色分配
@@ -255,7 +259,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 
                 UserRole existingUserRole = userRoleMapper.selectOne(queryWrapper);
                 if (existingUserRole != null) {
-                    return Result.error(ResultCode.ROLE_ALREADY_ASSIGNED);
+                    return Result.error(1112, "用户已拥有该角色");
                 }
 
                 // 创建用户角色关联
@@ -273,7 +277,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 
             } catch (Exception e) {
                 log.error("角色分配数据库操作失败：用户ID={}, 角色ID={}", userId, roleId, e);
-                throw new BusinessException(ResultCode.ROLE_ASSIGN_ERROR, "角色分配失败");
+                throw new BusinessException(1111, "角色分配失败");
             }
         } catch (BusinessException e) {
             log.error("角色分配业务异常：{}", e.getMessage());
@@ -338,7 +342,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
                 
             } catch (Exception e) {
                 log.error("批量角色分配数据库操作失败：用户ID={}, 角色数量={}", userId, roleIds.size(), e);
-                throw new BusinessException(ResultCode.ROLE_ASSIGN_ERROR, "批量角色分配失败");
+                throw new BusinessException(1111, "批量角色分配失败");
             }
         } catch (BusinessException e) {
             log.error("批量角色分配业务异常：{}", e.getMessage());

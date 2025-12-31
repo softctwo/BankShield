@@ -138,9 +138,13 @@ public class RoleCheckAspect {
                 throw new BusinessException(ResultCode.ROLE_MUTEX_CONFLICT, errorMsg);
             } else {
                 // 非强制检查，仅记录违规 - 安全地获取第一个冲突角色
-                RoleMutex firstConflict = conflicts.get(0);
-                roleCheckService.recordRoleViolation(userId, roleCode, 
-                        firstConflict.getMutexRoleCode(), 1, null, "system");
+                if (!conflicts.isEmpty()) {
+                    RoleMutex firstConflict = conflicts.get(0);
+                    roleCheckService.recordRoleViolation(userId, roleCode, 
+                            firstConflict.getMutexRoleCode(), 1, null, "system");
+                } else {
+                    log.warn("检测到角色冲突但冲突列表为空，无法记录违规信息");
+                }
             }
         }
     }
