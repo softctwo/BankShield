@@ -5,7 +5,7 @@ import com.bankshield.api.mapper.UserMapper;
 import com.bankshield.api.service.LoginAuditService;
 import com.bankshield.api.service.UserService;
 import com.bankshield.common.result.Result;
-import com.bankshield.common.utils.EncryptUtil;
+import com.bankshield.common.crypto.EncryptUtil;
 import com.bankshield.common.utils.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

@@ -63,6 +63,36 @@ const complianceRouter: RouteRecordRaw = {
         icon: 'Clock',
         roles: ['AUDIT_ADMIN']
       }
+    },
+    {
+      path: '/compliance/rule',
+      name: 'ComplianceRule',
+      component: () => import('@/views/compliance/rule/index.vue'),
+      meta: {
+        title: '合规规则',
+        icon: 'Document',
+        roles: ['AUDIT_ADMIN']
+      }
+    },
+    {
+      path: '/compliance/task',
+      name: 'ComplianceTask',
+      component: () => import('@/views/compliance/task/index.vue'),
+      meta: {
+        title: '检查任务',
+        icon: 'List',
+        roles: ['AUDIT_ADMIN']
+      }
+    },
+    {
+      path: '/compliance/report',
+      name: 'ComplianceReport',
+      component: () => import('@/views/compliance/report/index.vue'),
+      meta: {
+        title: '合规报告',
+        icon: 'Tickets',
+        roles: ['AUDIT_ADMIN']
+      }
     }
   ]
 }

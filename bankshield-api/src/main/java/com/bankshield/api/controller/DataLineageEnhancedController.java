@@ -1,6 +1,5 @@
 package com.bankshield.api.controller;
 
-import com.bankshield.common.result.CommonResult;
 import com.bankshield.common.result.Result;
 import com.bankshield.api.entity.DataFlow;
 import com.bankshield.api.entity.DataImpactAnalysis;
@@ -43,7 +42,7 @@ public class DataLineageEnhancedController {
 
     @PostMapping("/discovery/task")
     @ApiOperation("创建血缘发现任务")
-    public CommonResult<DataLineageAutoDiscovery> createDiscoveryTask(
+    public Result<DataLineageAutoDiscovery> createDiscoveryTask(
             @ApiParam("任务名称") @RequestParam String taskName,
             @ApiParam("数据源ID") @RequestParam Long dataSourceId,
             @ApiParam("发现策略") @RequestParam String discoveryStrategy,
@@ -56,68 +55,68 @@ public class DataLineageEnhancedController {
             // 启动异步任务
             CompletableFuture<DataLineageAutoDiscovery> future = lineageDiscoveryService.startDiscoveryTask(task.getId());
             
-            return CommonResult.success(task, "血缘发现任务创建成功");
+            return Result.success(task, "血缘发现任务创建成功");
         } catch (Exception e) {
             log.error("创建血缘发现任务失败", e);
-            return CommonResult.failed("创建血缘发现任务失败: " + e.getMessage());
+            return Result.failed("创建血缘发现任务失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/discovery/task/{taskId}")
     @ApiOperation("获取血缘发现任务状态")
-    public CommonResult<DataLineageAutoDiscovery> getDiscoveryTaskStatus(
+    public Result<DataLineageAutoDiscovery> getDiscoveryTaskStatus(
             @ApiParam("任务ID") @PathVariable Long taskId) {
         
         try {
             DataLineageAutoDiscovery task = lineageDiscoveryService.getTaskStatus(taskId);
             if (task == null) {
-                return CommonResult.failed("任务不存在");
+                return Result.failed("任务不存在");
             }
-            return CommonResult.success(task);
+            return Result.success(task);
         } catch (Exception e) {
             log.error("获取任务状态失败: {}", taskId, e);
-            return CommonResult.failed("获取任务状态失败: " + e.getMessage());
+            return Result.failed("获取任务状态失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/discovery/task/{taskId}/cancel")
     @ApiOperation("取消血缘发现任务")
-    public CommonResult<Boolean> cancelDiscoveryTask(
+    public Result<Boolean> cancelDiscoveryTask(
             @ApiParam("任务ID") @PathVariable Long taskId) {
         
         try {
             boolean result = lineageDiscoveryService.cancelTask(taskId);
-            return CommonResult.success(result, result ? "任务取消成功" : "任务取消失败");
+            return Result.success(result, result ? "任务取消成功" : "任务取消失败");
         } catch (Exception e) {
             log.error("取消任务失败: {}", taskId, e);
-            return CommonResult.failed("取消任务失败: " + e.getMessage());
+            return Result.failed("取消任务失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/discovery/tasks/recent")
     @ApiOperation("获取最近的血缘发现任务")
-    public CommonResult<List<DataLineageAutoDiscovery>> getRecentDiscoveryTasks(
+    public Result<List<DataLineageAutoDiscovery>> getRecentDiscoveryTasks(
             @ApiParam("返回任务数量") @RequestParam(defaultValue = "10") int limit) {
         
         try {
             List<DataLineageAutoDiscovery> tasks = lineageDiscoveryService.getRecentTasks(limit);
-            return CommonResult.success(tasks);
+            return Result.success(tasks);
         } catch (Exception e) {
             log.error("获取最近任务失败", e);
-            return CommonResult.failed("获取最近任务失败: " + e.getMessage());
+            return Result.failed("获取最近任务失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/discovery/statistics")
     @ApiOperation("获取血缘发现统计信息")
-    public CommonResult<Map<String, Object>> getDiscoveryStatistics() {
+    public Result<Map<String, Object>> getDiscoveryStatistics() {
         
         try {
             Map<String, Object> statistics = lineageDiscoveryService.getTaskStatistics();
-            return CommonResult.success(statistics);
+            return Result.success(statistics);
         } catch (Exception e) {
             log.error("获取统计信息失败", e);
-            return CommonResult.failed("获取统计信息失败: " + e.getMessage());
+            return Result.failed("获取统计信息失败: " + e.getMessage());
         }
     }
 
@@ -125,7 +124,7 @@ public class DataLineageEnhancedController {
 
     @PostMapping("/impact-analysis")
     @ApiOperation("创建影响分析任务")
-    public CommonResult<DataImpactAnalysis> createImpactAnalysis(
+    public Result<DataImpactAnalysis> createImpactAnalysis(
             @ApiParam("分析名称") @RequestParam String analysisName,
             @ApiParam("分析类型") @RequestParam String analysisType,
             @ApiParam("影响对象类型") @RequestParam String impactObjectType,
@@ -140,54 +139,54 @@ public class DataLineageEnhancedController {
             // 启动异步分析
             CompletableFuture<DataImpactAnalysis> future = impactAnalysisService.performImpactAnalysis(analysis.getId());
             
-            return CommonResult.success(analysis, "影响分析任务创建成功");
+            return Result.success(analysis, "影响分析任务创建成功");
         } catch (Exception e) {
             log.error("创建影响分析任务失败", e);
-            return CommonResult.failed("创建影响分析任务失败: " + e.getMessage());
+            return Result.failed("创建影响分析任务失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/impact-analysis/{analysisId}")
     @ApiOperation("获取影响分析结果")
-    public CommonResult<DataImpactAnalysis> getImpactAnalysisResult(
+    public Result<DataImpactAnalysis> getImpactAnalysisResult(
             @ApiParam("分析ID") @PathVariable Long analysisId) {
         
         try {
             DataImpactAnalysis result = impactAnalysisService.getAnalysisResult(analysisId);
             if (result == null) {
-                return CommonResult.failed("分析结果不存在");
+                return Result.failed("分析结果不存在");
             }
-            return CommonResult.success(result);
+            return Result.success(result);
         } catch (Exception e) {
             log.error("获取影响分析结果失败: {}", analysisId, e);
-            return CommonResult.failed("获取影响分析结果失败: " + e.getMessage());
+            return Result.failed("获取影响分析结果失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/impact-analysis/recent")
     @ApiOperation("获取最近的影响分析任务")
-    public CommonResult<List<DataImpactAnalysis>> getRecentImpactAnalyses(
+    public Result<List<DataImpactAnalysis>> getRecentImpactAnalyses(
             @ApiParam("返回任务数量") @RequestParam(defaultValue = "10") int limit) {
         
         try {
             List<DataImpactAnalysis> analyses = impactAnalysisService.getRecentAnalyses(limit);
-            return CommonResult.success(analyses);
+            return Result.success(analyses);
         } catch (Exception e) {
             log.error("获取最近分析失败", e);
-            return CommonResult.failed("获取最近分析失败: " + e.getMessage());
+            return Result.failed("获取最近分析失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/impact-analysis/statistics")
     @ApiOperation("获取影响分析统计信息")
-    public CommonResult<Map<String, Object>> getImpactAnalysisStatistics() {
+    public Result<Map<String, Object>> getImpactAnalysisStatistics() {
         
         try {
             Map<String, Object> statistics = impactAnalysisService.getAnalysisStatistics();
-            return CommonResult.success(statistics);
+            return Result.success(statistics);
         } catch (Exception e) {
             log.error("获取统计信息失败", e);
-            return CommonResult.failed("获取统计信息失败: " + e.getMessage());
+            return Result.failed("获取统计信息失败: " + e.getMessage());
         }
     }
 
@@ -195,48 +194,48 @@ public class DataLineageEnhancedController {
 
     @PostMapping("/data-map/global")
     @ApiOperation("生成全局数据地图")
-    public CommonResult<DataMap> generateGlobalDataMap() {
+    public Result<DataMap> generateGlobalDataMap() {
         
         try {
             DataMap dataMap = dataMapService.generateGlobalDataMap();
-            return CommonResult.success(dataMap, "全局数据地图生成成功");
+            return Result.success(dataMap, "全局数据地图生成成功");
         } catch (Exception e) {
             log.error("生成全局数据地图失败", e);
-            return CommonResult.failed("生成全局数据地图失败: " + e.getMessage());
+            return Result.failed("生成全局数据地图失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/data-map/business-domain")
     @ApiOperation("生成业务域数据地图")
-    public CommonResult<DataMap> generateBusinessDomainMap(
+    public Result<DataMap> generateBusinessDomainMap(
             @ApiParam("业务域名称") @RequestParam String businessDomain) {
         
         try {
             DataMap dataMap = dataMapService.generateBusinessDomainMap(businessDomain);
-            return CommonResult.success(dataMap, "业务域数据地图生成成功");
+            return Result.success(dataMap, "业务域数据地图生成成功");
         } catch (Exception e) {
             log.error("生成业务域数据地图失败: {}", businessDomain, e);
-            return CommonResult.failed("生成业务域数据地图失败: " + e.getMessage());
+            return Result.failed("生成业务域数据地图失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/data-map/data-source/{dataSourceId}")
     @ApiOperation("生成数据源数据地图")
-    public CommonResult<DataMap> generateDataSourceMap(
+    public Result<DataMap> generateDataSourceMap(
             @ApiParam("数据源ID") @PathVariable Long dataSourceId) {
         
         try {
             DataMap dataMap = dataMapService.generateDataSourceMap(dataSourceId);
-            return CommonResult.success(dataMap, "数据源数据地图生成成功");
+            return Result.success(dataMap, "数据源数据地图生成成功");
         } catch (Exception e) {
             log.error("生成数据源数据地图失败: {}", dataSourceId, e);
-            return CommonResult.failed("生成数据源数据地图失败: " + e.getMessage());
+            return Result.failed("生成数据源数据地图失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/data-map/custom")
     @ApiOperation("生成自定义数据地图")
-    public CommonResult<DataMap> generateCustomDataMap(
+    public Result<DataMap> generateCustomDataMap(
             @ApiParam("地图名称") @RequestParam String mapName,
             @ApiParam("包含的表名列表") @RequestParam(required = false) List<String> includedTables,
             @ApiParam("包含的数据源列表") @RequestParam(required = false) List<String> includedDataSources,
@@ -244,113 +243,113 @@ public class DataLineageEnhancedController {
         
         try {
             DataMap dataMap = dataMapService.generateCustomDataMap(mapName, includedTables, includedDataSources, layoutConfig);
-            return CommonResult.success(dataMap, "自定义数据地图生成成功");
+            return Result.success(dataMap, "自定义数据地图生成成功");
         } catch (Exception e) {
             log.error("生成自定义数据地图失败: {}", mapName, e);
-            return CommonResult.failed("生成自定义数据地图失败: " + e.getMessage());
+            return Result.failed("生成自定义数据地图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/data-map/{mapId}")
     @ApiOperation("获取数据地图")
-    public CommonResult<DataMap> getDataMap(
+    public Result<DataMap> getDataMap(
             @ApiParam("地图ID") @PathVariable Long mapId) {
         
         try {
             DataMap dataMap = dataMapService.getDataMap(mapId);
             if (dataMap == null) {
-                return CommonResult.failed("数据地图不存在");
+                return Result.failed("数据地图不存在");
             }
-            return CommonResult.success(dataMap);
+            return Result.success(dataMap);
         } catch (Exception e) {
             log.error("获取数据地图失败: {}", mapId, e);
-            return CommonResult.failed("获取数据地图失败: " + e.getMessage());
+            return Result.failed("获取数据地图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/data-map/active")
     @ApiOperation("获取所有活跃的数据地图")
-    public CommonResult<List<DataMap>> getActiveDataMaps() {
+    public Result<List<DataMap>> getActiveDataMaps() {
         
         try {
             List<DataMap> dataMaps = dataMapService.getActiveDataMaps();
-            return CommonResult.success(dataMaps);
+            return Result.success(dataMaps);
         } catch (Exception e) {
             log.error("获取活跃数据地图失败", e);
-            return CommonResult.failed("获取活跃数据地图失败: " + e.getMessage());
+            return Result.failed("获取活跃数据地图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/data-map/default")
     @ApiOperation("获取默认数据地图")
-    public CommonResult<DataMap> getDefaultDataMap() {
+    public Result<DataMap> getDefaultDataMap() {
         
         try {
             DataMap dataMap = dataMapService.getDefaultDataMap();
             if (dataMap == null) {
-                return CommonResult.failed("默认数据地图不存在");
+                return Result.failed("默认数据地图不存在");
             }
-            return CommonResult.success(dataMap);
+            return Result.success(dataMap);
         } catch (Exception e) {
             log.error("获取默认数据地图失败", e);
-            return CommonResult.failed("获取默认数据地图失败: " + e.getMessage());
+            return Result.failed("获取默认数据地图失败: " + e.getMessage());
         }
     }
 
     @PutMapping("/data-map/{mapId}/default")
     @ApiOperation("设置默认数据地图")
-    public CommonResult<Boolean> setDefaultDataMap(
+    public Result<Boolean> setDefaultDataMap(
             @ApiParam("地图ID") @PathVariable Long mapId) {
         
         try {
             boolean result = dataMapService.setDefaultDataMap(mapId);
-            return CommonResult.success(result, result ? "设置默认数据地图成功" : "设置默认数据地图失败");
+            return Result.success(result, result ? "设置默认数据地图成功" : "设置默认数据地图失败");
         } catch (Exception e) {
             log.error("设置默认数据地图失败: {}", mapId, e);
-            return CommonResult.failed("设置默认数据地图失败: " + e.getMessage());
+            return Result.failed("设置默认数据地图失败: " + e.getMessage());
         }
     }
 
     @PutMapping("/data-map/{mapId}")
     @ApiOperation("更新数据地图")
-    public CommonResult<Boolean> updateDataMap(
+    public Result<Boolean> updateDataMap(
             @ApiParam("地图ID") @PathVariable Long mapId,
             @ApiParam("地图名称") @RequestParam String mapName,
             @ApiParam("布局配置（JSON格式）") @RequestBody(required = false) Map<String, Object> config) {
         
         try {
             boolean result = dataMapService.updateDataMap(mapId, mapName, config);
-            return CommonResult.success(result, result ? "更新数据地图成功" : "更新数据地图失败");
+            return Result.success(result, result ? "更新数据地图成功" : "更新数据地图失败");
         } catch (Exception e) {
             log.error("更新数据地图失败: {}", mapId, e);
-            return CommonResult.failed("更新数据地图失败: " + e.getMessage());
+            return Result.failed("更新数据地图失败: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/data-map/{mapId}")
     @ApiOperation("删除数据地图")
-    public CommonResult<Boolean> deleteDataMap(
+    public Result<Boolean> deleteDataMap(
             @ApiParam("地图ID") @PathVariable Long mapId) {
         
         try {
             boolean result = dataMapService.deleteDataMap(mapId);
-            return CommonResult.success(result, result ? "删除数据地图成功" : "删除数据地图失败");
+            return Result.success(result, result ? "删除数据地图成功" : "删除数据地图失败");
         } catch (Exception e) {
             log.error("删除数据地图失败: {}", mapId, e);
-            return CommonResult.failed("删除数据地图失败: " + e.getMessage());
+            return Result.failed("删除数据地图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/data-map/statistics")
     @ApiOperation("获取数据地图统计信息")
-    public CommonResult<Map<String, Object>> getDataMapStatistics() {
+    public Result<Map<String, Object>> getDataMapStatistics() {
         
         try {
             Map<String, Object> statistics = dataMapService.getDataMapStatistics();
-            return CommonResult.success(statistics);
+            return Result.success(statistics);
         } catch (Exception e) {
             log.error("获取数据地图统计信息失败", e);
-            return CommonResult.failed("获取数据地图统计信息失败: " + e.getMessage());
+            return Result.failed("获取数据地图统计信息失败: " + e.getMessage());
         }
     }
 
@@ -358,52 +357,52 @@ public class DataLineageEnhancedController {
 
     @GetMapping("/visualization/lineage-graph")
     @ApiOperation("生成血缘关系图")
-    public CommonResult<Map<String, Object>> generateLineageGraph(
+    public Result<Map<String, Object>> generateLineageGraph(
             @ApiParam("表名") @RequestParam String tableName,
             @ApiParam("字段名") @RequestParam(required = false) String columnName,
             @ApiParam("深度") @RequestParam(defaultValue = "2") int depth) {
         
         try {
             Map<String, Object> graphData = visualizationService.generateLineageGraph(tableName, columnName, depth);
-            return CommonResult.success(graphData, "血缘关系图生成成功");
+            return Result.success(graphData, "血缘关系图生成成功");
         } catch (Exception e) {
             log.error("生成血缘关系图失败: {}.{}", tableName, columnName, e);
-            return CommonResult.failed("生成血缘关系图失败: " + e.getMessage());
+            return Result.failed("生成血缘关系图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/visualization/impact-analysis")
     @ApiOperation("生成影响分析图")
-    public CommonResult<Map<String, Object>> generateImpactAnalysisGraph(
+    public Result<Map<String, Object>> generateImpactAnalysisGraph(
             @ApiParam("表名") @RequestParam String tableName,
             @ApiParam("字段名") @RequestParam(required = false) String columnName) {
         
         try {
             Map<String, Object> graphData = visualizationService.generateImpactAnalysisGraph(tableName, columnName);
-            return CommonResult.success(graphData, "影响分析图生成成功");
+            return Result.success(graphData, "影响分析图生成成功");
         } catch (Exception e) {
             log.error("生成影响分析图失败: {}.{}", tableName, columnName, e);
-            return CommonResult.failed("生成影响分析图失败: " + e.getMessage());
+            return Result.failed("生成影响分析图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/visualization/3d-data-map/{mapId}")
     @ApiOperation("生成3D数据地图")
-    public CommonResult<Map<String, Object>> generate3DDataMap(
+    public Result<Map<String, Object>> generate3DDataMap(
             @ApiParam("地图ID") @PathVariable Long mapId) {
         
         try {
             Map<String, Object> graphData = visualizationService.generate3DDataMap(mapId);
-            return CommonResult.success(graphData, "3D数据地图生成成功");
+            return Result.success(graphData, "3D数据地图生成成功");
         } catch (Exception e) {
             log.error("生成3D数据地图失败: {}", mapId, e);
-            return CommonResult.failed("生成3D数据地图失败: " + e.getMessage());
+            return Result.failed("生成3D数据地图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/visualization/traceability")
     @ApiOperation("生成溯源路径图")
-    public CommonResult<Map<String, Object>> generateTraceabilityGraph(
+    public Result<Map<String, Object>> generateTraceabilityGraph(
             @ApiParam("源表名") @RequestParam String sourceTable,
             @ApiParam("源字段名") @RequestParam(required = false) String sourceColumn,
             @ApiParam("目标表名") @RequestParam String targetTable,
@@ -412,32 +411,32 @@ public class DataLineageEnhancedController {
         try {
             Map<String, Object> graphData = visualizationService.generateTraceabilityGraph(
                 sourceTable, sourceColumn, targetTable, targetColumn);
-            return CommonResult.success(graphData, "溯源路径图生成成功");
+            return Result.success(graphData, "溯源路径图生成成功");
         } catch (Exception e) {
             log.error("生成溯源路径图失败: {}.{} -> {}.{}", sourceTable, sourceColumn, targetTable, targetColumn, e);
-            return CommonResult.failed("生成溯源路径图失败: " + e.getMessage());
+            return Result.failed("生成溯源路径图失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/visualization/data-flow")
     @ApiOperation("生成数据流向图")
-    public CommonResult<Map<String, Object>> generateDataFlowGraph(
+    public Result<Map<String, Object>> generateDataFlowGraph(
             @ApiParam("表名") @RequestParam String tableName,
             @ApiParam("开始时间") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
             @ApiParam("结束时间") @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endTime) {
         
         try {
             Map<String, Object> graphData = visualizationService.generateDataFlowGraph(tableName, startTime, endTime);
-            return CommonResult.success(graphData, "数据流向图生成成功");
+            return Result.success(graphData, "数据流向图生成成功");
         } catch (Exception e) {
             log.error("生成数据流向图失败: {}", tableName, e);
-            return CommonResult.failed("生成数据流向图失败: " + e.getMessage());
+            return Result.failed("生成数据流向图失败: " + e.getMessage());
         }
     }
 
     @PostMapping("/visualization/export-html")
     @ApiOperation("导出可视化图表为HTML")
-    public CommonResult<String> exportVisualizationToHtml(
+    public Result<String> exportVisualizationToHtml(
             @ApiParam("图表类型") @RequestParam String chartType,
             @ApiParam("图表数据") @RequestBody Map<String, Object> chartData,
             @ApiParam("图表标题") @RequestParam String title) {
@@ -447,10 +446,10 @@ public class DataLineageEnhancedController {
             String relativeFilePath = visualizationService.exportVisualizationToHtml(chartType, chartData, title);
 
             // 返回相对路径，防止暴露服务器内部路径
-            return CommonResult.success(relativeFilePath, "可视化图表导出成功");
+            return Result.success(relativeFilePath, "可视化图表导出成功");
         } catch (Exception e) {
             log.error("导出可视化图表失败", e);
-            return CommonResult.failed("导出可视化图表失败: " + e.getMessage());
+            return Result.failed("导出可视化图表失败: " + e.getMessage());
         }
     }
 
@@ -458,7 +457,7 @@ public class DataLineageEnhancedController {
 
     @GetMapping("/flows")
     @ApiOperation("查询数据流关系")
-    public CommonResult<List<DataFlow>> getDataFlows(
+    public Result<List<DataFlow>> getDataFlows(
             @ApiParam("源表名") @RequestParam(required = false) String sourceTable,
             @ApiParam("目标表名") @RequestParam(required = false) String targetTable,
             @ApiParam("流转类型") @RequestParam(required = false) String flowType,
@@ -468,16 +467,16 @@ public class DataLineageEnhancedController {
         try {
             // 这里应该实现查询逻辑
             // 简化处理，返回空列表
-            return CommonResult.success(java.util.Collections.emptyList());
+            return Result.success(java.util.Collections.emptyList());
         } catch (Exception e) {
             log.error("查询数据流关系失败", e);
-            return CommonResult.failed("查询数据流关系失败: " + e.getMessage());
+            return Result.failed("查询数据流关系失败: " + e.getMessage());
         }
     }
 
     @GetMapping("/flows/statistics")
     @ApiOperation("获取数据流统计信息")
-    public CommonResult<Map<String, Object>> getDataFlowStatistics() {
+    public Result<Map<String, Object>> getDataFlowStatistics() {
         
         try {
             Map<String, Object> statistics = new HashMap<>();
@@ -489,10 +488,10 @@ public class DataLineageEnhancedController {
             statistics.put("transformationFlows", 0);
             statistics.put("avgConfidence", 0.0);
             
-            return CommonResult.success(statistics);
+            return Result.success(statistics);
         } catch (Exception e) {
             log.error("获取数据流统计信息失败", e);
-            return CommonResult.failed("获取数据流统计信息失败: " + e.getMessage());
+            return Result.failed("获取数据流统计信息失败: " + e.getMessage());
         }
     }
 }

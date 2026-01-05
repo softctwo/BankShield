@@ -58,6 +58,36 @@ public class DataAsset implements Serializable {
      * 安全等级: 1:C1, 2:C2, 3:C3, 4:C4
      */
     private Integer securityLevel;
+    
+    /**
+     * 敏感级别: C1-公开, C2-内部, C3-敏感, C4-高敏感, C5-极敏感
+     */
+    private String sensitivityLevel;
+    
+    /**
+     * 分级方式: MANUAL-手动, AUTO-自动
+     */
+    private String classificationMethod;
+    
+    /**
+     * 分级时间
+     */
+    private LocalDateTime classificationTime;
+    
+    /**
+     * 分级原因
+     */
+    private String classificationReason;
+    
+    /**
+     * 最后审核时间
+     */
+    private LocalDateTime lastReviewTime;
+    
+    /**
+     * 审核人
+     */
+    private String reviewer;
 
     /**
      * 分类依据

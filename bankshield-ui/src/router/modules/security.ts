@@ -12,6 +12,26 @@ const securityRoutes: RouteRecordRaw[] = [
     },
     children: [
       {
+        path: 'dashboard',
+        component: () => import('@/views/security/dashboard/index.vue'),
+        name: 'SecurityDashboard',
+        meta: {
+          title: '安全大屏',
+          icon: 'DataBoard',
+          roles: ['SECURITY_ADMIN', 'ADMIN']
+        }
+      },
+      {
+        path: 'threat',
+        component: () => import('@/views/security/threat/index.vue'),
+        name: 'ThreatManagement',
+        meta: {
+          title: '威胁管理',
+          icon: 'Warning',
+          roles: ['SECURITY_ADMIN', 'ADMIN']
+        }
+      },
+      {
         path: 'scan-task',
         component: () => import('@/views/security/scan-task/index.vue'),
         name: 'ScanTask',

@@ -127,7 +127,7 @@ public class BlockchainAnchorServiceImpl implements BlockchainAnchorService {
          */
         public String sendTransaction(AnchorData data) {
             // 模拟区块链交易
-            String txHash = "0x" + com.bankshield.common.utils.EncryptUtil.sm3Hash(
+            String txHash = "0x" + com.bankshield.common.crypto.EncryptUtil.sm3Hash(
                 data.getType() + data.getBlockNumber() + data.getContentHash() + System.currentTimeMillis()
             );
             

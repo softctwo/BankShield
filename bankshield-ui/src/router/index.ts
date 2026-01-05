@@ -20,7 +20,15 @@ import auditRouter from './modules/audit'
 import monitorRouter from './modules/monitor'
 import encryptRouter from './modules/encrypt'
 import watermarkRouter from './modules/watermark'
+import blockchainRouter from './modules/blockchain'
+import mpcRouter from './modules/mpc'
 import aiRouter from './modules/ai'
+import lineageRouter from './modules/lineage-enhanced'
+import desensitizationRouter from './modules/desensitization'
+import accessControlRouter from './modules/access-control'
+import securityScanRouter from './modules/security-scan'
+import complianceRouter from './modules/compliance'
+import securityRouter from './modules/security'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -144,8 +152,24 @@ const routes: RouteRecordRaw[] = [
   encryptRouter,
   // 水印管理路由
   watermarkRouter,
+  // 区块链存证路由
+  blockchainRouter,
+  // 多方安全计算路由
+  mpcRouter,
   // AI智能分析路由
-  aiRouter
+  aiRouter,
+  // 数据血缘路由
+  lineageRouter,
+  // 数据脱敏路由
+  desensitizationRouter,
+  // 访问控制路由
+  accessControlRouter,
+  // 安全扫描路由
+  securityScanRouter,
+  // 合规管理路由
+  complianceRouter,
+  // 安全防护路由
+  ...securityRouter
 ]
 
 const router = createRouter({

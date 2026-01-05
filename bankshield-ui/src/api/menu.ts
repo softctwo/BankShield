@@ -1,4 +1,188 @@
 import request from '@/utils/request'
+
+/**
+ * 获取用户菜单树
+ */
+export function getUserMenuTree(userId: number) {
+  return request({
+    url: `/api/system/menu/user/${userId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取用户权限
+ */
+export function getUserPerms(userId: number) {
+  return request({
+    url: `/api/system/menu/perms/${userId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取路由信息
+ */
+export function getRouters() {
+  return request({
+    url: '/api/system/menu/getRouters',
+    method: 'get'
+  })
+}
+
+/**
+ * 查询所有菜单
+ */
+export function listMenu() {
+  return request({
+    url: '/api/system/menu/list',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取菜单树
+ */
+export function getMenuTree() {
+  return request({
+    url: '/api/system/menu/tree',
+    method: 'get'
+  })
+}
+
+/**
+ * 根据ID查询菜单
+ */
+export function getMenu(menuId: number) {
+  return request({
+    url: `/api/system/menu/${menuId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 新增菜单
+ */
+export function addMenu(data: any) {
+  return request({
+    url: '/api/system/menu',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 修改菜单
+ */
+export function updateMenu(data: any) {
+  return request({
+    url: '/api/system/menu',
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * 删除菜单
+ */
+export function delMenu(menuId: number) {
+  return request({
+    url: `/api/system/menu/${menuId}`,
+    method: 'delete'
+  })
+} from '@/utils/request'
+
+/**
+ * 获取用户菜单树
+ */
+export function getUserMenuTree(userId: number) {
+  return request({
+    url: `/api/system/menu/user/${userId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取用户权限
+ */
+export function getUserPerms(userId: number) {
+  return request({
+    url: `/api/system/menu/perms/${userId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取路由信息
+ */
+export function getRouters() {
+  return request({
+    url: '/api/system/menu/getRouters',
+    method: 'get'
+  })
+}
+
+/**
+ * 查询所有菜单
+ */
+export function listMenu() {
+  return request({
+    url: '/api/system/menu/list',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取菜单树
+ */
+export function getMenuTree() {
+  return request({
+    url: '/api/system/menu/tree',
+    method: 'get'
+  })
+}
+
+/**
+ * 根据ID查询菜单
+ */
+export function getMenu(menuId: number) {
+  return request({
+    url: `/api/system/menu/${menuId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 新增菜单
+ */
+export function addMenu(data: any) {
+  return request({
+    url: '/api/system/menu',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 修改菜单
+ */
+export function updateMenu(data: any) {
+  return request({
+    url: '/api/system/menu',
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * 删除菜单
+ */
+export function delMenu(menuId: number) {
+  return request({
+    url: `/api/system/menu/${menuId}`,
+    method: 'delete'
+  })
+} from '@/utils/request'
 import type { MenuInfo, MenuCreateRequest, MenuUpdateRequest } from '@/types/menu'
 
 // 获取菜单列表

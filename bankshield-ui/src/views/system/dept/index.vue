@@ -5,49 +5,47 @@
         <h1 class="text-2xl font-bold text-gray-900">部门管理</h1>
         <p class="mt-1 text-sm text-gray-500">管理组织架构和部门信息</p>
       </div>
-      <button
-        @click="handleAdd"
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        <el-icon class="mr-2"><Plus /></el-icon>
-        新增部门
-      </button>
+      <div class="flex gap-3">
+        <button @click="handleAdd" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          <el-icon class="mr-2"><Plus /></el-icon>
+          新增部门
+        </button>
+        <button @click="handleBatchExport" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <el-icon class="mr-2"><Download /></el-icon>
+          批量导出 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
+        </button>
+        <button @click="handleBatchEnable" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <el-icon class="mr-2"><Select /></el-icon>
+          批量启用 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
+        </button>
+        <button @click="handleBatchDelete" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <el-icon class="mr-2"><Delete /></el-icon>
+          批量删除 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
+        </button>
+      </div>
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">部门名称</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">部门编码</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">负责人</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">联系电话</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="dept in deptList" :key="dept.id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="text-sm font-medium text-gray-900">{{ dept.name }}</div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ dept.code }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ dept.leader }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ dept.phone }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {{ dept.status === 'active' ? '启用' : '禁用' }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button @click="handleEdit(dept)" class="text-blue-600 hover:text-blue-900 mr-3">编辑</button>
-              <button @click="handleDelete(dept)" class="text-red-600 hover:text-red-900">删除</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <el-table :data="deptList" border @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="name" label="部门名称" min-width="150" />
+        <el-table-column prop="code" label="部门编码" width="120" />
+        <el-table-column prop="leader" label="负责人" width="100" />
+        <el-table-column prop="phone" label="联系电话" width="140" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
+              {{ row.status === 'active' ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑部门' : '新增部门'" width="500px">
@@ -78,11 +76,12 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Download, Select, Delete } from '@element-plus/icons-vue'
 
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
+const selectedIds = ref<number[]>([])
 
 const form = reactive({
   id: 0,
@@ -109,6 +108,51 @@ const handleEdit = (row: any) => {
   isEdit.value = true
   Object.assign(form, row)
   dialogVisible.value = true
+}
+
+const handleSelectionChange = (selection: any[]) => {
+  selectedIds.value = selection.map(item => item.id)
+}
+
+const handleBatchExport = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要导出选中的 ${selectedIds.value.length} 个部门吗？`, '提示', { type: 'warning' })
+    ElMessage.success('导出成功')
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('导出失败')
+    }
+  }
+}
+
+const handleBatchEnable = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要启用选中的 ${selectedIds.value.length} 个部门吗？`, '提示', { type: 'warning' })
+    deptList.value.forEach(dept => {
+      if (selectedIds.value.includes(dept.id)) {
+        dept.status = 'active'
+      }
+    })
+    ElMessage.success('批量启用成功')
+    selectedIds.value = []
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('操作失败')
+    }
+  }
+}
+
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 个部门吗？此操作不可恢复！`, '警告', { type: 'error' })
+    deptList.value = deptList.value.filter(dept => !selectedIds.value.includes(dept.id))
+    ElMessage.success('删除成功')
+    selectedIds.value = []
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
 const handleDelete = async (row: any) => {

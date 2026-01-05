@@ -1,19 +1,24 @@
-import axios from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
 // 定义统一响应格式
-interface ResponseData<T = any> {
+export interface ResponseData<T = any> {
   code: number
   message: string
   data: T
-  success: boolean
+  success?: boolean
+}
+
+// 扩展AxiosRequestConfig
+interface CustomAxiosRequestConfig extends AxiosRequestConfig {
+  skipErrorHandler?: boolean
 }
 
 // 创建axios实例
-const service = axios.create({
+const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 10000,
+  timeout: 30000, // 增加超时时间到30秒
   headers: {
     'Content-Type': 'application/json'
   }
@@ -37,11 +42,11 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (response) => {
-    const data = response.data
+    const data = response.data as ResponseData
 
     // 假设后端返回格式：{ code: number, data: any, message: string }
     if (data.code === 200) {
-      return data
+      return response
     } else {
       ElMessage.error(data.message || '请求失败')
       return Promise.reject(new Error(data.message || '请求失败'))
@@ -78,5 +83,9 @@ service.interceptors.response.use(
   }
 )
 
+// 封装请求方法，提供更好的类型推断
+export function request<T = any>(config: CustomAxiosRequestConfig): Promise<ResponseData<T>> {
+  return service.request<ResponseData<T>>(config).then(res => res.data)
+}
+
 export default service
-export type { ResponseData }

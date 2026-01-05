@@ -271,7 +271,7 @@ public class AuditBlockServiceImpl implements AuditBlockService {
                         audit.getOperationType() + 
                         audit.getRequestUrl() + 
                         audit.getCreateTime();
-        return com.bankshield.common.utils.EncryptUtil.sm3Hash(content);
+        return com.bankshield.common.crypto.EncryptUtil.sm3Hash(content);
     }
     
     /**
@@ -289,7 +289,7 @@ public class AuditBlockServiceImpl implements AuditBlockService {
                 if (i + 1 < hashes.size()) {
                     // 合并两个哈希值
                     String combined = hashes.get(i) + hashes.get(i + 1);
-                    nextLevel.add(com.bankshield.common.utils.EncryptUtil.sm3Hash(combined));
+                    nextLevel.add(com.bankshield.common.crypto.EncryptUtil.sm3Hash(combined));
                 } else {
                     // 奇数个，直接传递
                     nextLevel.add(hashes.get(i));
@@ -310,7 +310,7 @@ public class AuditBlockServiceImpl implements AuditBlockService {
                         block.getMerkleRoot() + 
                         block.getAuditCount() + 
                         block.getBlockTime();
-        return com.bankshield.common.utils.EncryptUtil.sm3Hash(content);
+        return com.bankshield.common.crypto.EncryptUtil.sm3Hash(content);
     }
     
     /**
@@ -326,7 +326,7 @@ public class AuditBlockServiceImpl implements AuditBlockService {
      */
     private boolean verifyMerklePath(String leafHash, String merklePath, int index, String expectedRoot) {
         // 简化的验证逻辑（实际应该实现完整的Merkle证明）
-        String calculatedRoot = com.bankshield.common.utils.EncryptUtil.sm3Hash(leafHash + merklePath + index);
+        String calculatedRoot = com.bankshield.common.crypto.EncryptUtil.sm3Hash(leafHash + merklePath + index);
         return calculatedRoot.equals(expectedRoot);
     }
     

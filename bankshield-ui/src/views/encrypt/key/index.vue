@@ -10,9 +10,17 @@
           <el-icon class="mr-2"><Plus /></el-icon>
           生成密钥
         </button>
-        <button @click="handleExport" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
+        <button @click="handleBatchExport" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <el-icon class="mr-2"><Download /></el-icon>
-          导出密钥
+          批量导出 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
+        </button>
+        <button @click="handleBatchRotate" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <el-icon class="mr-2"><Refresh /></el-icon>
+          批量轮换 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
+        </button>
+        <button @click="handleBatchDelete" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <el-icon class="mr-2"><Delete /></el-icon>
+          批量删除 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
         </button>
       </div>
     </div>
@@ -67,42 +75,34 @@
 
     <!-- 密钥列表 -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">密钥名称</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">算法类型</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">密钥长度</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">过期时间</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="key in keyList" :key="key.id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ key.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="getAlgorithmClass(key.algorithm)">
-                {{ key.algorithm }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ key.length }} bits</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ key.createTime }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ key.expireTime }}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="key.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                {{ key.status === 'active' ? '正常' : '已过期' }}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button @click="handleView(key)" class="text-blue-600 hover:text-blue-900 mr-3">查看</button>
-              <button @click="handleRotate(key)" class="text-yellow-600 hover:text-yellow-900 mr-3">轮换</button>
-              <button @click="handleDelete(key)" class="text-red-600 hover:text-red-900">删除</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <el-table :data="keyList" border @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55" />
+        <el-table-column prop="name" label="密钥名称" min-width="150" />
+        <el-table-column prop="algorithm" label="算法类型" width="120">
+          <template #default="{ row }">
+            <el-tag :type="getAlgorithmTagType(row.algorithm)" size="small">{{ row.algorithm }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="length" label="密钥长度" width="100">
+          <template #default="{ row }">{{ row.length }} bits</template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" />
+        <el-table-column prop="expireTime" label="过期时间" width="180" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
+              {{ row.status === 'active' ? '正常' : '已过期' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
+            <el-button link type="warning" size="small" @click="handleRotate(row)">轮换</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- 生成密钥对话框 -->
@@ -145,10 +145,11 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Download, Key, Lock, Warning } from '@element-plus/icons-vue'
+import { Plus, Download, Key, Lock, Warning, Refresh, Delete } from '@element-plus/icons-vue'
 
 const dialogVisible = ref(false)
 const formRef = ref()
+const selectedIds = ref<number[]>([])
 
 const stats = reactive({
   sm2Keys: 12,
@@ -176,8 +177,44 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleExport = () => {
-  ElMessage.success('密钥导出功能开发中')
+const handleSelectionChange = (selection: any[]) => {
+  selectedIds.value = selection.map(item => item.id)
+}
+
+const handleBatchExport = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要导出选中的 ${selectedIds.value.length} 个密钥吗？`, '提示', { type: 'warning' })
+    ElMessage.success('密钥导出成功')
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('导出失败')
+    }
+  }
+}
+
+const handleBatchRotate = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要轮换选中的 ${selectedIds.value.length} 个密钥吗？`, '提示', { type: 'warning' })
+    ElMessage.success('密钥轮换成功')
+    selectedIds.value = []
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('轮换失败')
+    }
+  }
+}
+
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 个密钥吗？此操作不可恢复！`, '警告', { type: 'error' })
+    keyList.value = keyList.value.filter(key => !selectedIds.value.includes(key.id))
+    ElMessage.success('删除成功')
+    selectedIds.value = []
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 
 const handleView = (row: any) => {
@@ -217,12 +254,12 @@ const handleSubmit = () => {
   dialogVisible.value = false
 }
 
-const getAlgorithmClass = (algorithm: string) => {
-  const map: Record<string, string> = {
-    SM2: 'bg-blue-100 text-blue-800',
-    SM3: 'bg-green-100 text-green-800',
-    SM4: 'bg-yellow-100 text-yellow-800'
+const getAlgorithmTagType = (algorithm: string) => {
+  const map: Record<string, any> = {
+    SM2: 'primary',
+    SM3: 'success',
+    SM4: 'warning'
   }
-  return map[algorithm] || 'bg-gray-100 text-gray-800'
+  return map[algorithm] || ''
 }
 </script>

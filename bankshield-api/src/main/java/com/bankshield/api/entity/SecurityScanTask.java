@@ -1,13 +1,13 @@
 package com.bankshield.api.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -15,12 +15,8 @@ import java.time.LocalDateTime;
  * @author BankShield
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @TableName("security_scan_task")
-public class SecurityScanTask implements Serializable {
-
+public class SecurityScanTask {
     private static final long serialVersionUID = 1L;
 
     /**

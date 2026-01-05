@@ -17,6 +17,31 @@
       </div>
     </div>
 
+    <!-- 图表展示 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">敏感级别分布</h3>
+          <button @click="handleExportLevelChart" class="text-sm text-blue-600 hover:text-blue-700">
+            <el-icon class="mr-1"><Download /></el-icon>
+            导出
+          </button>
+        </div>
+        <div ref="levelChartRef" style="height: 300px;"></div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">资产类型统计</h3>
+          <button @click="handleExportTypeChart" class="text-sm text-blue-600 hover:text-blue-700">
+            <el-icon class="mr-1"><Download /></el-icon>
+            导出
+          </button>
+        </div>
+        <div ref="typeChartRef" style="height: 300px;"></div>
+      </div>
+    </div>
+
     <!-- 统计卡片 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white rounded-lg shadow p-6">
@@ -67,9 +92,37 @@
 
     <!-- 资产列表 -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
+      <!-- 批量操作工具栏 -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <el-checkbox v-model="selectAll" @change="handleSelectAll">全选</el-checkbox>
+          <span class="text-sm text-gray-500">已选择 {{ selectedCount }} 项</span>
+          <div v-if="hasSelected" class="flex gap-2">
+            <button @click="handleBatchDelete" class="text-sm text-red-600 hover:text-red-700">
+              <el-icon class="mr-1"><Delete /></el-icon>
+              批量删除
+            </button>
+            <button @click="handleBatchExport" class="text-sm text-blue-600 hover:text-blue-700">
+              <el-icon class="mr-1"><Download /></el-icon>
+              批量导出
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <el-input v-model="searchKeyword" placeholder="搜索资产名称" class="w-64" clearable>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </div>
+
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <el-checkbox v-model="selectAll" @change="handleSelectAll" />
+            </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">资产名称</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">资产类型</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">敏感级别</th>
@@ -80,7 +133,10 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="asset in assetList" :key="asset.id" class="hover:bg-gray-50">
+          <tr v-for="asset in paginatedAssets" :key="asset.id" class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <el-checkbox v-model="asset.selected" @change="handleSelect" />
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ asset.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ asset.type }}</td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -99,6 +155,55 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- 分页组件 -->
+      <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div class="flex items-center">
+          <span class="text-sm text-gray-700">
+            显示第 {{ startIndex }} 到 {{ endIndex }} 条，共 {{ filteredAssets.length }} 条
+          </span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button
+            @click="handlePrevious"
+            :disabled="currentPage === 1"
+            class="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            上一页
+          </button>
+          <div class="flex space-x-1">
+            <button
+              v-for="page in displayPages"
+              :key="page"
+              @click="handlePageChange(page)"
+              :class="[
+                'px-3 py-1 text-sm border rounded',
+                page === currentPage
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'hover:bg-gray-50'
+              ]"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <button
+            @click="handleNext"
+            :disabled="currentPage === totalPages"
+            class="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            下一页
+          </button>
+          <select
+            v-model="pageSize"
+            @change="handlePageSizeChange"
+            class="px-2 py-1 text-sm border rounded"
+          >
+            <option :value="10">10条/页</option>
+            <option :value="20">20条/页</option>
+            <option :value="50">50条/页</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- 新增资产对话框 -->
@@ -136,9 +241,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search, Files, Warning, CircleCheck } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import { Plus, Search, Files, Warning, CircleCheck, Download, Delete } from '@element-plus/icons-vue'
+
+// ECharts实例引用
+const levelChartRef = ref<HTMLElement>()
+const typeChartRef = ref<HTMLElement>()
+let levelChart: echarts.ECharts | null = null
+let typeChart: echarts.ECharts | null = null
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
+const searchKeyword = ref('')
+
+// 批量操作相关
+const selectAll = ref(false)
 
 const dialogVisible = ref(false)
 const formRef = ref()
@@ -158,11 +278,60 @@ const form = reactive({
 })
 
 const assetList = ref([
-  { id: 1, name: '客户信息表', type: '数据库', level: 'high', dataSize: '1.2GB', department: '业务部', updateTime: '2024-12-30 10:00:00' },
-  { id: 2, name: '交易记录表', type: '数据库', level: 'high', dataSize: '5.6GB', department: '财务部', updateTime: '2024-12-30 09:30:00' },
-  { id: 3, name: '用户日志文件', type: '文件', level: 'medium', dataSize: '800MB', department: '技术部', updateTime: '2024-12-29 16:20:00' },
-  { id: 4, name: '系统配置文件', type: '文件', level: 'low', dataSize: '50MB', department: '技术部', updateTime: '2024-12-29 14:10:00' }
+  { id: 1, name: '客户信息表', type: '数据库', level: 'high', dataSize: '1.2GB', department: '业务部', updateTime: '2024-12-30 10:00:00', selected: false },
+  { id: 2, name: '交易记录表', type: '数据库', level: 'high', dataSize: '5.6GB', department: '财务部', updateTime: '2024-12-30 09:30:00', selected: false },
+  { id: 3, name: '用户日志文件', type: '文件', level: 'medium', dataSize: '800MB', department: '技术部', updateTime: '2024-12-29 16:20:00', selected: false },
+  { id: 4, name: '系统配置文件', type: '文件', level: 'low', dataSize: '50MB', department: '技术部', updateTime: '2024-12-29 14:10:00', selected: false },
+  { id: 5, name: '账户余额表', type: '数据库', level: 'high', dataSize: '2.3GB', department: '财务部', updateTime: '2024-12-29 12:00:00', selected: false },
+  { id: 6, name: '操作日志', type: '文件', level: 'medium', dataSize: '1.5GB', department: '技术部', updateTime: '2024-12-28 18:30:00', selected: false },
+  { id: 7, name: '系统备份', type: '文件', level: 'low', dataSize: '3.2GB', department: '技术部', updateTime: '2024-12-28 15:20:00', selected: false },
+  { id: 8, name: '用户权限表', type: '数据库', level: 'medium', dataSize: '200MB', department: '安全部', updateTime: '2024-12-27 11:10:00', selected: false },
+  { id: 9, name: '审计报告', type: '文件', level: 'high', dataSize: '500MB', department: '审计部', updateTime: '2024-12-27 09:00:00', selected: false },
+  { id: 10, name: '接口文档', type: '接口', level: 'low', dataSize: '50MB', department: '技术部', updateTime: '2024-12-26 16:40:00', selected: false },
+  { id: 11, name: '数据字典', type: '数据库', level: 'medium', dataSize: '100MB', department: '技术部', updateTime: '2024-12-26 14:30:00', selected: false },
+  { id: 12, name: '监控数据', type: '文件', level: 'low', dataSize: '2.1GB', department: '运维部', updateTime: '2024-12-25 20:15:00', selected: false }
 ])
+
+// 计算属性
+const filteredAssets = computed(() => {
+  if (!searchKeyword.value) return assetList.value
+  return assetList.value.filter(asset => 
+    asset.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  )
+})
+
+const totalPages = computed(() => Math.ceil(filteredAssets.value.length / pageSize.value))
+
+const startIndex = computed(() => (currentPage.value - 1) * pageSize.value + 1)
+
+const endIndex = computed(() => Math.min(currentPage.value * pageSize.value, filteredAssets.value.length))
+
+const paginatedAssets = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredAssets.value.slice(start, end)
+})
+
+const displayPages = computed(() => {
+  const pages: number[] = []
+  const maxDisplay = 5
+  let start = Math.max(1, currentPage.value - Math.floor(maxDisplay / 2))
+  let end = Math.min(totalPages.value, start + maxDisplay - 1)
+
+  if (end - start < maxDisplay - 1) {
+    start = Math.max(1, end - maxDisplay + 1)
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+
+  return pages
+})
+
+const selectedCount = computed(() => assetList.value.filter(a => a.selected).length)
+
+const hasSelected = computed(() => selectedCount.value > 0)
 
 const handleAdd = () => {
   Object.assign(form, { name: '', type: '数据库', level: 'medium', department: '' })
@@ -198,7 +367,8 @@ const handleSubmit = () => {
     id: Date.now(),
     ...form,
     dataSize: '0MB',
-    updateTime: new Date().toLocaleString('zh-CN')
+    updateTime: new Date().toLocaleString('zh-CN'),
+    selected: false
   }
   assetList.value.unshift(newAsset)
   ElMessage.success('新增成功')
@@ -222,4 +392,216 @@ const getLevelClass = (level: string) => {
   }
   return map[level] || 'bg-gray-100 text-gray-800'
 }
+
+// 批量操作
+const handleSelectAll = () => {
+  paginatedAssets.value.forEach(asset => {
+    asset.selected = selectAll.value
+  })
+}
+
+const handleSelect = () => {
+  selectAll.value = paginatedAssets.value.every(asset => asset.selected)
+}
+
+const handleBatchDelete = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedCount.value} 项吗？`,
+      '批量删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    assetList.value = assetList.value.filter(asset => !asset.selected)
+    selectAll.value = false
+    ElMessage.success(`成功删除 ${selectedCount.value} 项`)
+  } catch {}
+}
+
+const handleBatchExport = () => {
+  const selectedData = assetList.value.filter(asset => asset.selected)
+  ElMessage.success(`正在导出 ${selectedCount.value} 项数据`)
+  console.log('导出数据:', selectedData)
+}
+
+// 分页操作
+const handlePrevious = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+
+const handleNext = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+}
+
+const handlePageSizeChange = () => {
+  currentPage.value = 1
+}
+
+// 初始化敏感级别分布饼图
+const initLevelChart = () => {
+  if (!levelChartRef.value) return
+  levelChart = echarts.init(levelChartRef.value)
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      bottom: '0%',
+      left: 'center'
+    },
+    series: [
+      {
+        name: '敏感级别',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: true,
+          formatter: '{b}\n{c}个'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          }
+        },
+        data: [
+          { value: stats.high, name: '高敏感', itemStyle: { color: '#dc2626' } },
+          { value: stats.medium, name: '中敏感', itemStyle: { color: '#ca8a04' } },
+          { value: stats.low, name: '低敏感', itemStyle: { color: '#16a34a' } }
+        ]
+      }
+    ]
+  }
+
+  levelChart.setOption(option)
+}
+
+// 初始化资产类型柱状图
+const initTypeChart = () => {
+  if (!typeChartRef.value) return
+  typeChart = echarts.init(typeChartRef.value)
+
+  const typeStats = {
+    '数据库': assetList.value.filter(a => a.type === '数据库').length,
+    '文件': assetList.value.filter(a => a.type === '文件').length,
+    '接口': assetList.value.filter(a => a.type === '接口').length
+  }
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: Object.keys(typeStats),
+      axisLabel: {
+        interval: 0
+      }
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '资产数量',
+        type: 'bar',
+        data: Object.values(typeStats),
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#2563eb' },
+            { offset: 1, color: '#3b82f6' }
+          ])
+        },
+        barWidth: '60%'
+      }
+    ]
+  }
+
+  typeChart.setOption(option)
+}
+
+// 图表导出
+const handleExportLevelChart = () => {
+  if (levelChart) {
+    const url = levelChart.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: '#fff'
+    })
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `敏感级别分布_${new Date().getTime()}.png`
+    link.click()
+    ElMessage.success('图表导出成功')
+  }
+}
+
+const handleExportTypeChart = () => {
+  if (typeChart) {
+    const url = typeChart.getDataURL({
+      type: 'png',
+      pixelRatio: 2,
+      backgroundColor: '#fff'
+    })
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `资产类型统计_${new Date().getTime()}.png`
+    link.click()
+    ElMessage.success('图表导出成功')
+  }
+}
+
+// 初始化所有图表
+const initCharts = () => {
+  initLevelChart()
+  initTypeChart()
+}
+
+// 窗口大小改变时重新调整图表大小
+const handleResize = () => {
+  levelChart?.resize()
+  typeChart?.resize()
+}
+
+// 生命周期钩子
+onMounted(() => {
+  initCharts()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  levelChart?.dispose()
+  typeChart?.dispose()
+})
 </script>
