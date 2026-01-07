@@ -187,4 +187,42 @@ public class DesensitizationRuleServiceImpl implements DesensitizationRuleServic
             return "测试失败: " + e.getMessage();
         }
     }
+    
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<DesensitizationRule> pageRules(
+            Page<DesensitizationRule> page, String ruleName, String dataType, String status) {
+        try {
+            LambdaQueryWrapper<DesensitizationRule> wrapper = new LambdaQueryWrapper<>();
+            
+            if (ruleName != null && !ruleName.isEmpty()) {
+                wrapper.like(DesensitizationRule::getRuleName, ruleName);
+            }
+            if (dataType != null && !dataType.isEmpty()) {
+                wrapper.eq(DesensitizationRule::getDataType, dataType);
+            }
+            if (status != null && !status.isEmpty()) {
+                wrapper.eq(DesensitizationRule::getStatus, status);
+            }
+            
+            wrapper.orderByAsc(DesensitizationRule::getPriority);
+            
+            return ruleMapper.selectPage(page, wrapper);
+        } catch (Exception e) {
+            log.error("分页查询规则失败: {}", e.getMessage(), e);
+            return new Page<>();
+        }
+    }
+    
+    @Override
+    public boolean updateRuleStatus(Long id, String status) {
+        try {
+            DesensitizationRule rule = new DesensitizationRule();
+            rule.setId(id);
+            rule.setStatus(status);
+            return ruleMapper.updateById(rule) > 0;
+        } catch (Exception e) {
+            log.error("更新规则状态失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
 }

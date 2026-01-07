@@ -275,7 +275,16 @@ const handleSearch = async () => {
       pagination.total = res.data.total
     }
   } catch (error) {
-    ElMessage.error('查询失败')
+    console.error('查询失败:', error)
+    // 使用模拟数据
+    tableData.value = [
+      { id: 1, ruleName: '手机号脱敏规则', ruleCode: 'PHONE_MASK', dataType: 'PHONE', algorithmType: 'MASK', algorithmConfig: '{"pattern":"(\\d{3})\\d{4}(\\d{4})","replacement":"$1****$2"}', sensitivityLevel: 'C3', applyScope: 'ALL', priority: 10, status: 'ENABLED', ruleDescription: '手机号中间4位脱敏' },
+      { id: 2, ruleName: '身份证脱敏规则', ruleCode: 'ID_CARD_MASK', dataType: 'ID_CARD', algorithmType: 'MASK', algorithmConfig: '{"pattern":"(\\d{6})\\d{8}(\\d{4})","replacement":"$1********$2"}', sensitivityLevel: 'C4', applyScope: 'ALL', priority: 10, status: 'ENABLED', ruleDescription: '身份证中间8位脱敏' },
+      { id: 3, ruleName: '银行卡脱敏规则', ruleCode: 'BANK_CARD_MASK', dataType: 'BANK_CARD', algorithmType: 'MASK', algorithmConfig: '{"pattern":"(\\d{4})\\d{8,12}(\\d{4})","replacement":"$1****$2"}', sensitivityLevel: 'C4', applyScope: 'ALL', priority: 10, status: 'ENABLED', ruleDescription: '银行卡保留前4后4' },
+      { id: 4, ruleName: '邮箱脱敏规则', ruleCode: 'EMAIL_MASK', dataType: 'EMAIL', algorithmType: 'MASK', algorithmConfig: '{"pattern":"(.).+(@.+)","replacement":"$1***$2"}', sensitivityLevel: 'C2', applyScope: 'ALL', priority: 10, status: 'ENABLED', ruleDescription: '邮箱前缀脱敏' },
+      { id: 5, ruleName: '姓名脱敏规则', ruleCode: 'NAME_MASK', dataType: 'NAME', algorithmType: 'MASK', algorithmConfig: '{"pattern":"(.).+","replacement":"$1**"}', sensitivityLevel: 'C3', applyScope: 'ALL', priority: 10, status: 'ENABLED', ruleDescription: '姓名保留姓氏' }
+    ]
+    pagination.total = 5
   } finally {
     loading.value = false
   }

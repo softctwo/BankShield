@@ -99,4 +99,57 @@ public class SM4Util {
             throw new RuntimeException("SM4解密失败", e);
         }
     }
+    
+    /**
+     * 生成初始化向量IV
+     */
+    public static String generateIV() {
+        try {
+            byte[] iv = new byte[16];
+            new SecureRandom().nextBytes(iv);
+            return Base64.getEncoder().encodeToString(iv);
+        } catch (Exception e) {
+            throw new RuntimeException("生成IV失败", e);
+        }
+    }
+    
+    /**
+     * SM4 CBC模式加密
+     */
+    public static String encryptCBC(String data, String key, String iv) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(key);
+            byte[] ivBytes = Base64.getDecoder().decode(iv);
+            SecretKeySpec secretKey = new SecretKeySpec(keyBytes, ALGORITHM);
+            javax.crypto.spec.IvParameterSpec ivSpec = new javax.crypto.spec.IvParameterSpec(ivBytes);
+            
+            Cipher cipher = Cipher.getInstance(ALGORITHM + "/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+            
+            byte[] encryptedBytes = cipher.doFinal(data.getBytes("UTF-8"));
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("SM4 CBC加密失败", e);
+        }
+    }
+    
+    /**
+     * SM4 CBC模式解密
+     */
+    public static String decryptCBC(String encryptedData, String key, String iv) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(key);
+            byte[] ivBytes = Base64.getDecoder().decode(iv);
+            SecretKeySpec secretKey = new SecretKeySpec(keyBytes, ALGORITHM);
+            javax.crypto.spec.IvParameterSpec ivSpec = new javax.crypto.spec.IvParameterSpec(ivBytes);
+            
+            Cipher cipher = Cipher.getInstance(ALGORITHM + "/CBC/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+            
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
+            return new String(decryptedBytes, "UTF-8");
+        } catch (Exception e) {
+            throw new RuntimeException("SM4 CBC解密失败", e);
+        }
+    }
 }

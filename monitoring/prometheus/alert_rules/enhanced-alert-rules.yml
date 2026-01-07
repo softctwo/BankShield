@@ -1,0 +1,202 @@
+groups:
+  - name: bankshield_system_alerts
+    interval: 30s
+    rules:
+      # 服务可用性告警
+      - alert: ServiceDown
+        expr: up{job=~"bankshield.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "BankShield服务不可用"
+          description: "服务 {{ $labels.job }} 已停止运行超过1分钟"
+
+      # CPU使用率告警
+      - alert: HighCPUUsage
+        expr: process_cpu_usage{job=~"bankshield.*"} > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "CPU使用率过高"
+          description: "服务 {{ $labels.job }} CPU使用率超过80%，当前值: {{ $value | humanizePercentage }}"
+
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: (jvm_memory_used_bytes{job=~"bankshield.*"} / jvm_memory_max_bytes{job=~"bankshield.*"}) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "内存使用率过高"
+          description: "服务 {{ $labels.job }} 内存使用率超过85%，当前值: {{ $value | humanizePercentage }}"
+
+      # GC频率告警
+      - alert: HighGCRate
+        expr: rate(jvm_gc_pause_seconds_count{job=~"bankshield.*"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "GC频率过高"
+          description: "服务 {{ $labels.job }} GC频率超过10次/秒"
+
+  - name: bankshield_api_alerts
+    interval: 30s
+    rules:
+      # API响应时间告警
+      - alert: SlowAPIResponse
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="bankshield-api"}[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "API响应时间过慢"
+          description: "接口 {{ $labels.uri }} P95响应时间超过200ms，当前值: {{ $value }}s"
+
+      # API错误率告警
+      - alert: HighAPIErrorRate
+        expr: (rate(http_server_requests_seconds_count{job="bankshield-api",status=~"5.."}[5m]) / rate(http_server_requests_seconds_count{job="bankshield-api"}[5m])) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "API错误率过高"
+          description: "API错误率超过5%，当前值: {{ $value | humanizePercentage }}"
+
+      # API请求量激增
+      - alert: APIRequestSpike
+        expr: rate(http_server_requests_seconds_count{job="bankshield-api"}[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          category: traffic
+        annotations:
+          summary: "API请求量激增"
+          description: "API请求量超过1000 QPS，当前值: {{ $value }}"
+
+  - name: bankshield_database_alerts
+    interval: 30s
+    rules:
+      # 数据库连接池耗尽
+      - alert: DatabaseConnectionPoolExhausted
+        expr: (hikaricp_connections_active{job="bankshield-api"} / hikaricp_connections_max{job="bankshield-api"}) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "数据库连接池即将耗尽"
+          description: "数据库连接池使用率超过90%，当前值: {{ $value | humanizePercentage }}"
+
+      # 慢查询告警
+      - alert: SlowDatabaseQuery
+        expr: histogram_quantile(0.95, rate(hikaricp_connections_usage_seconds_bucket{job="bankshield-api"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "数据库查询过慢"
+          description: "数据库P95查询时间超过100ms，当前值: {{ $value }}s"
+
+      # 连接等待时间过长
+      - alert: LongDatabaseConnectionWait
+        expr: (hikaricp_connections_acquire_seconds_sum{job="bankshield-api"} / hikaricp_connections_acquire_seconds_count{job="bankshield-api"}) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "数据库连接等待时间过长"
+          description: "平均连接等待时间超过50ms，当前值: {{ $value }}s"
+
+  - name: bankshield_security_alerts
+    interval: 15s
+    rules:
+      # 未处理高危告警
+      - alert: UnresolvedCriticalAlerts
+        expr: bankshield_alert_unresolved_count{alert_level="HIGH"} > 10
+        for: 5m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "存在大量未处理高危告警"
+          description: "未处理高危告警数量: {{ $value }}"
+
+      # 登录失败次数过多
+      - alert: HighLoginFailureRate
+        expr: rate(bankshield_login_failed_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "登录失败次数过多"
+          description: "登录失败频率超过10次/分钟，可能存在暴力破解"
+
+      # 安全扫描发现高危漏洞
+      - alert: CriticalVulnerabilityDetected
+        expr: bankshield_security_scan_vulnerabilities_count{severity="CRITICAL"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "发现严重安全漏洞"
+          description: "安全扫描发现 {{ $value }} 个严重漏洞，需立即处理"
+
+  - name: bankshield_business_alerts
+    interval: 1m
+    rules:
+      # 数据脱敏失败率过高
+      - alert: HighMaskingFailureRate
+        expr: (rate(bankshield_masking_failed_total[5m]) / rate(bankshield_masking_operations_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "数据脱敏失败率过高"
+          description: "脱敏失败率超过10%，当前值: {{ $value | humanizePercentage }}"
+
+      # 合规检查失败
+      - alert: ComplianceCheckFailed
+        expr: bankshield_compliance_check_pass_rate < 0.95
+        for: 10m
+        labels:
+          severity: warning
+          category: compliance
+        annotations:
+          summary: "合规检查通过率低"
+          description: "合规检查通过率低于95%，当前值: {{ $value | humanizePercentage }}"
+
+      # 审计日志写入异常
+      - alert: AuditLogWriteFailure
+        expr: rate(bankshield_audit_log_write_failed_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          category: audit
+        annotations:
+          summary: "审计日志写入失败"
+          description: "审计日志写入失败，可能影响合规性"
+
+      # 未分类资产过多
+      - alert: TooManyUnclassifiedAssets
+        expr: bankshield_asset_unclassified_count > 100
+        for: 1h
+        labels:
+          severity: info
+          category: data-governance
+        annotations:
+          summary: "存在大量未分类资产"
+          description: "未分类资产数量: {{ $value }}，建议尽快分类"

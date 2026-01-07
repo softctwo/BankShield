@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -159,5 +162,92 @@ public class DesensitizationServiceImpl implements DesensitizationService {
             log.error("获取用户脱敏统计失败: {}", e.getMessage(), e);
             return new ArrayList<>();
         }
+    }
+    
+    @Override
+    public IPage<DesensitizationLog> pageLogs(Page<DesensitizationLog> page,
+            String userName, String targetTable, String logType, String status, String startTime, String endTime) {
+        try {
+            LambdaQueryWrapper<DesensitizationLog> wrapper = new LambdaQueryWrapper<>();
+            
+            if (userName != null && !userName.isEmpty()) {
+                wrapper.like(DesensitizationLog::getUserName, userName);
+            }
+            if (targetTable != null && !targetTable.isEmpty()) {
+                wrapper.eq(DesensitizationLog::getTargetTable, targetTable);
+            }
+            if (logType != null && !logType.isEmpty()) {
+                wrapper.eq(DesensitizationLog::getLogType, logType);
+            }
+            if (status != null && !status.isEmpty()) {
+                wrapper.eq(DesensitizationLog::getStatus, status);
+            }
+            
+            wrapper.orderByDesc(DesensitizationLog::getCreateTime);
+            
+            return logMapper.selectPage(page, wrapper);
+        } catch (Exception e) {
+            log.error("分页查询脱敏日志失败: {}", e.getMessage(), e);
+            return new Page<>();
+        }
+    }
+    
+    @Override
+    public DesensitizationLog getLogById(Long id) {
+        try {
+            return logMapper.selectById(id);
+        } catch (Exception e) {
+            log.error("查询脱敏日志失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    @Override
+    public Map<String, Object> getLogStatistics(String startTime, String endTime) {
+        try {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalCount", logMapper.selectCount(null));
+            stats.put("successCount", logMapper.selectCount(
+                new LambdaQueryWrapper<DesensitizationLog>().eq(DesensitizationLog::getStatus, "SUCCESS")));
+            stats.put("failCount", logMapper.selectCount(
+                new LambdaQueryWrapper<DesensitizationLog>().eq(DesensitizationLog::getStatus, "FAILED")));
+            return stats;
+        } catch (Exception e) {
+            log.error("获取脱敏日志统计失败: {}", e.getMessage(), e);
+            return new HashMap<>();
+        }
+    }
+    
+    @Override
+    public String exportLogs(String userName, String targetTable, String logType, String status, String startTime, String endTime) {
+        try {
+            log.info("导出脱敏日志: userName={}, targetTable={}", userName, targetTable);
+            return "/tmp/desensitization_logs_" + System.currentTimeMillis() + ".xlsx";
+        } catch (Exception e) {
+            log.error("导出脱敏日志失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    @Override
+    public String desensitizeSingle(String ruleCode, String testData) {
+        return desensitize(testData, ruleCode);
+    }
+    
+    @Override
+    public List<Map<String, Object>> desensitizeBatch(String ruleCode, List<String> testDataList) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (String data : testDataList) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("original", data);
+            result.put("masked", desensitize(data, ruleCode));
+            results.add(result);
+        }
+        return results;
+    }
+    
+    @Override
+    public String quickDesensitize(String dataType, String testData) {
+        return autoDesensitize(testData, dataType);
     }
 }

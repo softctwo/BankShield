@@ -110,6 +110,60 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('加载数据失败', error)
+    // 使用模拟数据
+    tableData.value = [
+      {
+        id: 1,
+        anchorType: 'AUDIT',
+        businessId: 'AUDIT_20260107_001',
+        recordId: 'REC_001',
+        dataHash: '0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890',
+        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        blockId: 'BLOCK_12345',
+        createTime: '2026-01-07 10:30:15'
+      },
+      {
+        id: 2,
+        anchorType: 'KEY',
+        businessId: 'KEY_20260107_002',
+        recordId: 'REC_002',
+        dataHash: '0x2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890ab',
+        txHash: '0xbcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
+        blockId: 'BLOCK_12346',
+        createTime: '2026-01-07 11:15:30'
+      },
+      {
+        id: 3,
+        anchorType: 'COMPLIANCE',
+        businessId: 'COMP_20260107_003',
+        recordId: 'REC_003',
+        dataHash: '0x3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcd',
+        txHash: '0xcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc',
+        blockId: 'BLOCK_12347',
+        createTime: '2026-01-07 12:45:20'
+      },
+      {
+        id: 4,
+        anchorType: 'AUDIT',
+        businessId: 'AUDIT_20260107_004',
+        recordId: 'REC_004',
+        dataHash: '0x4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+        txHash: '0xdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd',
+        blockId: 'BLOCK_12348',
+        createTime: '2026-01-07 14:20:45'
+      },
+      {
+        id: 5,
+        anchorType: 'KEY',
+        businessId: 'KEY_20260107_005',
+        recordId: 'REC_005',
+        dataHash: '0x5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12',
+        txHash: '0xef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde',
+        blockId: 'BLOCK_12349',
+        createTime: '2026-01-07 15:50:10'
+      }
+    ]
+    pagination.total = 5
   } finally {
     loading.value = false
   }

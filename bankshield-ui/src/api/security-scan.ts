@@ -103,6 +103,17 @@ export const scanReportApi = {
 
 // 安全基线相关API
 export const securityBaselineApi = {
+  // 分页获取安全基线
+  getBaselinesPage: (params: {
+    page: number
+    size: number
+    checkName?: string
+    complianceStandard?: string
+    checkType?: string
+  }) => {
+    return request.get('/api/security-scan/baseline', { params })
+  },
+
   // 获取所有安全基线
   getAllBaselines: () => {
     return request.get('/api/security-scan/baseline/all')
@@ -113,13 +124,73 @@ export const securityBaselineApi = {
     return request.get('/api/security-scan/baseline/enabled')
   },
 
+  // 获取基线详情
+  getBaselineDetail: (id: number) => {
+    return request.get(`/api/security-scan/baseline/${id}`)
+  },
+
+  // 创建安全基线
+  createBaseline: (baseline: Partial<SecurityBaseline>) => {
+    return request.post('/api/security-scan/baseline', baseline)
+  },
+
   // 更新安全基线
   updateBaseline: (id: number, baseline: Partial<SecurityBaseline>) => {
     return request.put(`/api/security-scan/baseline/${id}`, baseline)
   },
 
+  // 删除安全基线
+  deleteBaseline: (id: number) => {
+    return request.delete(`/api/security-scan/baseline/${id}`)
+  },
+
+  // 批量删除安全基线
+  batchDeleteBaselines: (ids: number[]) => {
+    return request.delete('/api/security-scan/baseline/batch', { data: ids })
+  },
+
   // 批量更新基线启用状态
   batchUpdateBaselineEnabled: (ids: number[], enabled: boolean) => {
     return request.put('/api/security-scan/baseline/batch-enabled', { ids, enabled })
+  },
+
+  // 获取基线统计信息
+  getBaselineStatistics: () => {
+    return request.get('/api/security-scan/baseline/statistics')
+  },
+
+  // 根据检查类型获取基线
+  getBaselinesByType: (checkType: string) => {
+    return request.get(`/api/security-scan/baseline/type/${checkType}`)
+  },
+
+  // 获取内置基线
+  getBuiltinBaselines: () => {
+    return request.get('/api/security-scan/baseline/builtin')
+  },
+
+  // 获取自定义基线
+  getCustomBaselines: () => {
+    return request.get('/api/security-scan/baseline/custom')
+  },
+
+  // 初始化安全基线
+  initBaselines: () => {
+    return request.post('/api/security-scan/baseline/init')
+  },
+
+  // 同步内置基线
+  syncBuiltinBaselines: () => {
+    return request.post('/api/security-scan/baseline/sync')
+  },
+
+  // 执行基线检查
+  executeBaselineCheck: (id: number) => {
+    return request.post(`/api/security-scan/baseline/${id}/check`)
+  },
+
+  // 批量执行基线检查
+  batchExecuteBaselineCheck: (ids: number[]) => {
+    return request.post('/api/security-scan/baseline/batch-check', ids)
   }
 }

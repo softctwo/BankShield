@@ -15,9 +15,14 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * 启用三权分立机制的相关配置
  */
 @Slf4j
-@SpringBootApplication
+@SpringBootApplication(
+    scanBasePackages = {"com.bankshield.api", "com.bankshield.common"},
+    exclude = {
+        org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration.class
+    }
+)
 @EnableEurekaClient
-@EnableSwagger2
+// @EnableSwagger2  // 暂时禁用Swagger，与Spring Boot版本不兼容
 @EnableAspectJAutoProxy(exposeProxy = true)
 @EnableScheduling
 @EnableAsync

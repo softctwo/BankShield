@@ -85,6 +85,26 @@ public class SM2Util {
     }
     
     /**
+     * 公钥转字符串
+     */
+    public static String publicKeyToString(java.security.PublicKey publicKey) {
+        if (publicKey == null) {
+            return null;
+        }
+        return Base64.getEncoder().encodeToString(publicKey.getEncoded());
+    }
+    
+    /**
+     * 私钥转字符串
+     */
+    public static String privateKeyToString(java.security.PrivateKey privateKey) {
+        if (privateKey == null) {
+            return null;
+        }
+        return Base64.getEncoder().encodeToString(privateKey.getEncoded());
+    }
+    
+    /**
      * SM2密钥对
      */
     public static class SM2KeyPair {

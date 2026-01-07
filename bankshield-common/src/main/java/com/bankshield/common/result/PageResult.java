@@ -67,6 +67,30 @@ public class PageResult<T> implements Serializable {
         return new PageResult<>(total, list, pageNum, pageSize);
     }
     
+    /**
+     * 创建成功的分页结果
+     */
+    public static <T> PageResult<T> success(List<T> list, Long total, Integer pageNum, Integer pageSize) {
+        return new PageResult<>(total, list, pageNum, pageSize);
+    }
+    
+    /**
+     * 创建成功的分页结果（不带页码信息）
+     */
+    public static <T> PageResult<T> success(List<T> list, Long total) {
+        return new PageResult<>(total, list);
+    }
+    
+    /**
+     * 创建失败的分页结果
+     */
+    public static <T> PageResult<T> error(String message) {
+        PageResult<T> result = new PageResult<>();
+        result.setTotal(0L);
+        result.setList(null);
+        return result;
+    }
+    
     // Getter and Setter
     public Long getTotal() {
         return total;

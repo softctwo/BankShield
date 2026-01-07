@@ -25,10 +25,10 @@ import java.util.Map;
 @Service
 public class SecureKeyManagementService {
     
-    @Autowired
+    @Autowired(required = false)
     private VaultOperations vaultOperations;
     
-    @Autowired
+    @Autowired(required = false)
     private VaultConfig vaultConfig;
     
     @Autowired

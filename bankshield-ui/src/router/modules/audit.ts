@@ -43,6 +43,26 @@ const auditRouter: RouteRecordRaw = {
         icon: 'Key',
         roles: ['admin', 'audit-admin']
       }
+    },
+    {
+      path: '/audit/security',
+      name: 'SecurityAudit',
+      component: () => import('@/views/audit/security/index.vue'),
+      meta: {
+        title: '安全审计',
+        icon: 'Warning',
+        roles: ['admin', 'audit-admin']
+      }
+    },
+    {
+      path: '/audit/analysis',
+      name: 'AuditAnalysis',
+      component: () => import('@/views/audit/analysis/index.vue'),
+      meta: {
+        title: '审计分析',
+        icon: 'TrendCharts',
+        roles: ['admin', 'audit-admin']
+      }
     }
   ]
 }

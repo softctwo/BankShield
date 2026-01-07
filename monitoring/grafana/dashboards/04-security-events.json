@@ -1,0 +1,96 @@
+{
+  "dashboard": {
+    "title": "BankShield - 安全事件监控",
+    "tags": ["bankshield", "security", "alerts"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "告警触发趋势",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bankshield_alert_triggered_total[5m])",
+            "legendFormat": "{{alert_level}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "告警级别分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (alert_level) (bankshield_alert_triggered_total)",
+            "legendFormat": "{{alert_level}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "未处理告警数",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_alert_unresolved_count",
+            "legendFormat": "未处理告警"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 8},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 10, "color": "yellow"},
+          {"value": 50, "color": "red"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "高危告警数",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_alert_unresolved_count{alert_level=\"HIGH\"}",
+            "legendFormat": "高危告警"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 8},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 5, "color": "yellow"},
+          {"value": 20, "color": "red"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "登录失败次数",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bankshield_login_failed_total[5m])",
+            "legendFormat": "登录失败/分钟"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "安全扫描结果",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "bankshield_security_scan_vulnerabilities_count",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

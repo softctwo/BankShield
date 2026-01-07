@@ -3,8 +3,9 @@ package com.bankshield.api.component;
 import com.bankshield.api.entity.*;
 import com.bankshield.api.mapper.*;
 import com.bankshield.api.service.PerformanceOptimizationService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
@@ -22,18 +23,33 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class CacheWarmUpRunner implements CommandLineRunner {
     
-    private final CacheManager cacheManager;
-    private final PerformanceOptimizationService performanceService;
-    private final UserMapper userMapper;
-    private final RoleMapper roleMapper;
-    private final DeptMapper deptMapper;
-    private final MenuMapper menuMapper;
-    private final SecurityKeyMapper securityKeyMapper;
-    private final DataAssetMapper dataAssetMapper;
-    private final Executor asyncExecutor;
+    @Autowired
+    private CacheManager cacheManager;
+    
+    @Autowired
+    private PerformanceOptimizationService performanceService;
+    
+    @Autowired
+    private UserMapper userMapper;
+    
+    @Autowired
+    private RoleMapper roleMapper;
+    
+    @Autowired
+    private DeptMapper deptMapper;
+    
+    @Autowired
+    private MenuMapper menuMapper;
+    
+    @Autowired
+    private SecurityKeyMapper securityKeyMapper;
+    
+    @Autowired
+    private DataAssetMapper dataAssetMapper;
+    
+    // 使用默认的ForkJoinPool，不依赖注入
     
     @Override
     public void run(String... args) throws Exception {
@@ -41,13 +57,16 @@ public class CacheWarmUpRunner implements CommandLineRunner {
         long startTime = System.currentTimeMillis();
         
         try {
+            // 使用默认线程池
+            Executor executor = ForkJoinPool.commonPool();
+            
             // 并行预热不同类型的缓存
-            CompletableFuture<Void> userCacheFuture = CompletableFuture.runAsync(() -> warmUpUserCache(), asyncExecutor);
-            CompletableFuture<Void> roleCacheFuture = CompletableFuture.runAsync(() -> warmUpRoleCache(), asyncExecutor);
-            CompletableFuture<Void> deptCacheFuture = CompletableFuture.runAsync(() -> warmUpDeptCache(), asyncExecutor);
-            CompletableFuture<Void> menuCacheFuture = CompletableFuture.runAsync(() -> warmUpMenuCache(), asyncExecutor);
-            CompletableFuture<Void> keyCacheFuture = CompletableFuture.runAsync(() -> warmUpKeyCache(), asyncExecutor);
-            CompletableFuture<Void> assetCacheFuture = CompletableFuture.runAsync(() -> warmUpAssetCache(), asyncExecutor);
+            CompletableFuture<Void> userCacheFuture = CompletableFuture.runAsync(() -> warmUpUserCache(), executor);
+            CompletableFuture<Void> roleCacheFuture = CompletableFuture.runAsync(() -> warmUpRoleCache(), executor);
+            CompletableFuture<Void> deptCacheFuture = CompletableFuture.runAsync(() -> warmUpDeptCache(), executor);
+            CompletableFuture<Void> menuCacheFuture = CompletableFuture.runAsync(() -> warmUpMenuCache(), executor);
+            CompletableFuture<Void> keyCacheFuture = CompletableFuture.runAsync(() -> warmUpKeyCache(), executor);
+            CompletableFuture<Void> assetCacheFuture = CompletableFuture.runAsync(() -> warmUpAssetCache(), executor);
             
             // 等待所有预热任务完成
             CompletableFuture.allOf(userCacheFuture, roleCacheFuture, deptCacheFuture, 

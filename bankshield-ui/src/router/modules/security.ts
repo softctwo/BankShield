@@ -90,6 +90,16 @@ const securityRoutes: RouteRecordRaw[] = [
           icon: 'el-icon-document',
           roles: ['SECURITY_ADMIN', 'ADMIN']
         }
+      },
+      {
+        path: 'scan',
+        component: () => import('@/views/security-scan/task/index.vue'),
+        name: 'SecurityScanTask',
+        meta: {
+          title: '扫描任务',
+          icon: 'el-icon-search',
+          roles: ['SECURITY_ADMIN', 'ADMIN']
+        }
       }
     ]
   }

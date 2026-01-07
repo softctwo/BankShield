@@ -400,7 +400,45 @@ public class LineageDiscoveryService {
         stats.put("runningTasks", 0);
         stats.put("completedTasks", 0);
         stats.put("failedTasks", 0);
+        stats.put("totalDiscoveredFlows", 0);
         
         return stats;
+    }
+
+    /**
+     * 删除任务
+     */
+    public boolean deleteTask(Long taskId) {
+        try {
+            int result = discoveryTaskMapper.deleteById(taskId);
+            return result > 0;
+        } catch (Exception e) {
+            log.error("删除任务失败: {}", taskId, e);
+            return false;
+        }
+    }
+
+    /**
+     * 重试任务
+     */
+    public DataLineageAutoDiscovery retryTask(Long taskId) {
+        DataLineageAutoDiscovery task = discoveryTaskMapper.selectById(taskId);
+        if (task == null) {
+            throw new RuntimeException("任务不存在: " + taskId);
+        }
+        
+        // 重置任务状态
+        task.setStatus("PENDING");
+        task.setStartTime(null);
+        task.setEndTime(null);
+        task.setErrorMessage(null);
+        task.setDiscoveredFlowsCount(0);
+        task.setUpdateTime(LocalDateTime.now());
+        discoveryTaskMapper.updateById(task);
+        
+        // 启动异步任务
+        startDiscoveryTask(task.getId());
+        
+        return task;
     }
 }

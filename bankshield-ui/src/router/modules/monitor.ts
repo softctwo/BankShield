@@ -63,6 +63,16 @@ const monitorRouter: RouteRecordRaw = {
         icon: 'Monitor',
         roles: ['admin', 'system-admin']
       }
+    },
+    {
+      path: '/monitor/alert',
+      name: 'MonitorAlert',
+      component: () => import('@/views/monitor/alert/index.vue'),
+      meta: {
+        title: '告警管理',
+        icon: 'Bell',
+        roles: ['admin', 'system-admin']
+      }
     }
   ]
 }

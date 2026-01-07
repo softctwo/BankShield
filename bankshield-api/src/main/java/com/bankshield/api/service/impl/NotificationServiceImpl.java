@@ -34,10 +34,10 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private NotificationConfigMapper notificationConfigMapper;
 
-    @Autowired
+    @Autowired(required = false)
     private JavaMailSender mailSender;
 
-    @Autowired
+    @Autowired(required = false)
     private RestTemplate restTemplate;
 
     // 通知频率控制缓存

@@ -43,7 +43,7 @@ public class UnifiedAuditService {
             60L, // 空闲线程存活时间
             TimeUnit.SECONDS,
             new LinkedBlockingQueue<>(), // 使用无界队列
-            new ThreadFactoryBuilder(). daemon(true),
+            new ThreadFactoryBuilder().daemon(true).build(),
             new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略：使用调用者运行
         );
 
@@ -69,7 +69,7 @@ public class UnifiedAuditService {
 
         // 使用offer避免阻塞，如果队列满则持久化
         if (!auditQueue.offer(log)) {
-            log.warn("审计队列已满，将直接持久化日志");
+            UnifiedAuditService.log.warn("审计队列已满，将直接持久化日志");
             // 队列满时直接持久化（降级处理）
             persistDirectly(log);
         }
@@ -88,7 +88,7 @@ public class UnifiedAuditService {
                 persistToFile(log);
             }
         } catch (Exception e) {
-            log.error("持久化审计日志失败", e);
+            UnifiedAuditService.log.error("持久化审计日志失败", e);
             totalFailed.incrementAndGet();
         }
     }
@@ -194,9 +194,9 @@ public class UnifiedAuditService {
     /**
      * 文件持久化（备用方案）
      */
-    private void persistToFile(AuditLog log) {
+    private void persistToFile(AuditLog auditLog) {
         // 简化实现：记录到日志文件
-        log.info("AUDIT_LOG: {}", log.toString());
+        log.info("AUDIT_LOG: {}", auditLog.toString());
     }
 
     /**

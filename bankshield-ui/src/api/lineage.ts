@@ -173,6 +173,113 @@ export const exportLineageData = (nodeId: number, depth: number = 3): Promise<Re
   })
 }
 
+// ==================== 血缘发现任务相关API ====================
+
+/**
+ * 创建血缘发现任务
+ */
+export const createDiscoveryTask = (
+  taskName: string,
+  dataSourceId: number,
+  discoveryStrategy: string,
+  config?: Record<string, any>
+): Promise<Result<DiscoveryTask>> => {
+  return request({
+    url: '/api/lineage/enhanced/discovery/task',
+    method: 'post',
+    params: { taskName, dataSourceId, discoveryStrategy },
+    data: config
+  })
+}
+
+/**
+ * 获取发现任务状态
+ */
+export const getDiscoveryTaskStatus = (taskId: number): Promise<Result<DiscoveryTask>> => {
+  return request({
+    url: `/api/lineage/enhanced/discovery/task/${taskId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 取消发现任务
+ */
+export const cancelDiscoveryTask = (taskId: number): Promise<Result<boolean>> => {
+  return request({
+    url: `/api/lineage/enhanced/discovery/task/${taskId}/cancel`,
+    method: 'post'
+  })
+}
+
+/**
+ * 获取最近的发现任务列表
+ */
+export const getRecentDiscoveryTasks = (limit: number = 10): Promise<Result<DiscoveryTask[]>> => {
+  return request({
+    url: '/api/lineage/enhanced/discovery/tasks/recent',
+    method: 'get',
+    params: { limit }
+  })
+}
+
+/**
+ * 获取发现任务统计
+ */
+export const getDiscoveryStatistics = (): Promise<Result<DiscoveryStatistics>> => {
+  return request({
+    url: '/api/lineage/enhanced/discovery/statistics',
+    method: 'get'
+  })
+}
+
+/**
+ * 分页获取发现任务列表
+ */
+export const getDiscoveryTasksPage = (params: {
+  page: number
+  size: number
+  status?: string
+  strategy?: string
+  dataSourceId?: number
+}): Promise<Result<PageResult<DiscoveryTask>>> => {
+  return request({
+    url: '/api/lineage/enhanced/discovery/tasks',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 删除发现任务
+ */
+export const deleteDiscoveryTask = (taskId: number): Promise<Result<boolean>> => {
+  return request({
+    url: `/api/lineage/enhanced/discovery/task/${taskId}`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 重新执行发现任务
+ */
+export const retryDiscoveryTask = (taskId: number): Promise<Result<DiscoveryTask>> => {
+  return request({
+    url: `/api/lineage/enhanced/discovery/task/${taskId}/retry`,
+    method: 'post'
+  })
+}
+
+/**
+ * 获取数据源列表（用于创建任务）
+ */
+export const getDataSourceList = (): Promise<Result<DataSourceItem[]>> => {
+  return request({
+    url: '/api/datasource/list',
+    method: 'get'
+  })
+}
+
 // 类型定义
 export interface LineageGraph {
   graphId: string
@@ -338,4 +445,52 @@ export interface PageResult<T> {
   optimizeJoinOfCountSql: boolean
   maxLimit?: number
   pages: number
+}
+
+// 血缘发现任务相关类型
+export interface DiscoveryTask {
+  id: number
+  taskName: string
+  dataSourceId: number
+  dataSourceName?: string
+  discoveryStrategy: string
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'CANCELLED'
+  startTime?: string
+  endTime?: string
+  discoveredFlowsCount?: number
+  config?: string
+  errorMessage?: string
+  createTime: string
+  updateTime: string
+}
+
+export interface DiscoveryStatistics {
+  totalTasks: number
+  runningTasks: number
+  completedTasks: number
+  failedTasks: number
+  totalDiscoveredFlows: number
+  averageExecutionTime?: number
+  successRate?: number
+  byStrategy?: Record<string, number>
+  byStatus?: Record<string, number>
+  recentTrend?: TrendData[]
+}
+
+export interface TrendData {
+  date: string
+  count: number
+  successCount?: number
+  failedCount?: number
+}
+
+export interface DataSourceItem {
+  id: number
+  name: string
+  type: string
+  host?: string
+  port?: number
+  database?: string
+  status: string
+  description?: string
 }

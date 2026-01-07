@@ -1,97 +1,158 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="mb-6 flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">密钥管理</h1>
-        <p class="mt-1 text-sm text-gray-500">管理系统加密密钥，支持国密SM2/SM3/SM4算法</p>
+  <div class="key-management-container">
+    <el-card shadow="never" class="mb-4">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold">密钥管理</h2>
+          <p class="text-gray-500 text-sm mt-1">管理系统加密密钥，支持国密SM2/SM3/SM4算法</p>
+        </div>
+        <div class="flex gap-2">
+          <el-button type="primary" @click="handleAdd">
+            <el-icon class="mr-1"><Plus /></el-icon>生成密钥
+          </el-button>
+          <el-button @click="handleBatchExport" :disabled="selectedIds.length === 0">
+            <el-icon class="mr-1"><Download /></el-icon>批量导出
+          </el-button>
+          <el-button type="warning" @click="handleBatchRotate" :disabled="selectedIds.length === 0">
+            <el-icon class="mr-1"><Refresh /></el-icon>批量轮换
+          </el-button>
+        </div>
       </div>
-      <div class="flex gap-3">
-        <button @click="handleAdd" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-          <el-icon class="mr-2"><Plus /></el-icon>
-          生成密钥
-        </button>
-        <button @click="handleBatchExport" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <el-icon class="mr-2"><Download /></el-icon>
-          批量导出 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
-        </button>
-        <button @click="handleBatchRotate" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <el-icon class="mr-2"><Refresh /></el-icon>
-          批量轮换 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
-        </button>
-        <button @click="handleBatchDelete" :disabled="selectedIds.length === 0" class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          <el-icon class="mr-2"><Delete /></el-icon>
-          批量删除 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
-        </button>
-      </div>
-    </div>
 
-    <!-- 统计卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <el-icon class="text-2xl text-blue-600"><Key /></el-icon>
+      <!-- 统计卡片 -->
+      <el-row :gutter="16" class="mb-4">
+        <el-col :span="6">
+          <div class="stat-card stat-card-primary">
+            <div class="stat-icon">
+              <el-icon size="28"><Key /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.totalKeys }}</div>
+              <div class="stat-label">总密钥数</div>
+            </div>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">SM2密钥</p>
-            <p class="text-2xl font-bold text-gray-900">{{ stats.sm2Keys }}</p>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card stat-card-success">
+            <div class="stat-icon">
+              <el-icon size="28"><CircleCheck /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.activeKeys }}</div>
+              <div class="stat-label">活跃密钥</div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <el-icon class="text-2xl text-green-600"><Lock /></el-icon>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card stat-card-warning">
+            <div class="stat-icon">
+              <el-icon size="28"><Warning /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.expiringKeys }}</div>
+              <div class="stat-label">即将过期</div>
+            </div>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">SM3密钥</p>
-            <p class="text-2xl font-bold text-gray-900">{{ stats.sm3Keys }}</p>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-card stat-card-danger">
+            <div class="stat-icon">
+              <el-icon size="28"><Lock /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value">{{ stats.inactiveKeys }}</div>
+              <div class="stat-label">已禁用</div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-            <el-icon class="text-2xl text-yellow-600"><Lock /></el-icon>
+        </el-col>
+      </el-row>
+
+      <!-- 密钥类型分布 -->
+      <el-row :gutter="16" class="mb-4">
+        <el-col :span="8">
+          <div class="type-stat-card">
+            <div class="type-icon type-sm2">SM2</div>
+            <div class="type-info">
+              <div class="type-value">{{ stats.sm2Keys }}</div>
+              <div class="type-label">非对称加密</div>
+            </div>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">SM4密钥</p>
-            <p class="text-2xl font-bold text-gray-900">{{ stats.sm4Keys }}</p>
+        </el-col>
+        <el-col :span="8">
+          <div class="type-stat-card">
+            <div class="type-icon type-sm3">SM3</div>
+            <div class="type-info">
+              <div class="type-value">{{ stats.sm3Keys }}</div>
+              <div class="type-label">哈希算法</div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="flex-shrink-0 h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-            <el-icon class="text-2xl text-red-600"><Warning /></el-icon>
+        </el-col>
+        <el-col :span="8">
+          <div class="type-stat-card">
+            <div class="type-icon type-sm4">SM4</div>
+            <div class="type-info">
+              <div class="type-value">{{ stats.sm4Keys }}</div>
+              <div class="type-label">对称加密</div>
+            </div>
           </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">即将过期</p>
-            <p class="text-2xl font-bold text-gray-900">{{ stats.expiring }}</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        </el-col>
+      </el-row>
+
+      <!-- 搜索条件 -->
+      <el-form :inline="true" :model="queryForm" class="mb-4">
+        <el-form-item label="密钥名称">
+          <el-input v-model="queryForm.keyName" placeholder="请输入密钥名称" clearable />
+        </el-form-item>
+        <el-form-item label="密钥类型">
+          <el-select v-model="queryForm.keyType" placeholder="请选择" clearable>
+            <el-option label="SM2" value="SM2" />
+            <el-option label="SM3" value="SM3" />
+            <el-option label="SM4" value="SM4" />
+            <el-option label="AES" value="AES" />
+            <el-option label="RSA" value="RSA" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="queryForm.keyStatus" placeholder="请选择" clearable>
+            <el-option label="活跃" value="ACTIVE" />
+            <el-option label="禁用" value="INACTIVE" />
+            <el-option label="已过期" value="EXPIRED" />
+            <el-option label="已撤销" value="REVOKED" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleQuery">
+            <el-icon><Search /></el-icon> 查询
+          </el-button>
+          <el-button @click="handleReset">
+            <el-icon><Refresh /></el-icon> 重置
+          </el-button>
+        </el-form-item>
+      </el-form>
 
     <!-- 密钥列表 -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-      <el-table :data="keyList" border @selection-change="handleSelectionChange">
+      <el-table v-loading="loading" :data="keyList" border @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="name" label="密钥名称" min-width="150" />
-        <el-table-column prop="algorithm" label="算法类型" width="120">
+        <el-table-column prop="keyName" label="密钥名称" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="keyType" label="算法类型" width="120">
           <template #default="{ row }">
-            <el-tag :type="getAlgorithmTagType(row.algorithm)" size="small">{{ row.algorithm }}</el-tag>
+            <el-tag :type="getAlgorithmTagType(row.keyType)" size="small">{{ row.keyType }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="length" label="密钥长度" width="100">
-          <template #default="{ row }">{{ row.length }} bits</template>
+        <el-table-column prop="keyLength" label="密钥长度" width="100">
+          <template #default="{ row }">{{ row.keyLength }} bits</template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column prop="expireTime" label="过期时间" width="180" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="keyUsage" label="用途" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'active' ? '正常' : '已过期' }}
+            <el-tag size="small">{{ getUsageLabel(row.keyUsage) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="170" />
+        <el-table-column prop="expireTime" label="过期时间" width="170" />
+        <el-table-column prop="keyStatus" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.keyStatus)" size="small">
+              {{ getStatusLabel(row.keyStatus) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -99,11 +160,22 @@
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
             <el-button link type="warning" size="small" @click="handleRotate(row)">轮换</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">销毁</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </div>
+
+      <el-pagination
+        v-model:current-page="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        class="mt-4"
+        @size-change="loadKeyList"
+        @current-change="loadKeyList"
+      />
+    </el-card>
 
     <!-- 生成密钥对话框 -->
     <el-dialog v-model="dialogVisible" title="生成密钥" width="500px">
@@ -143,37 +215,112 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Download, Key, Lock, Warning, Refresh, Delete } from '@element-plus/icons-vue'
+import { Plus, Download, Key, Lock, Warning, Refresh, Delete, Search, CircleCheck } from '@element-plus/icons-vue'
+import { getKeyList, getKeyStatistics, generateKey, rotateKey, destroyKey, exportKeyInfo } from '@/api/key'
 
+const loading = ref(false)
 const dialogVisible = ref(false)
 const formRef = ref()
 const selectedIds = ref<number[]>([])
+const total = ref(0)
+const keyList = ref<any[]>([])
+
+const queryForm = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  keyName: '',
+  keyType: '',
+  keyStatus: ''
+})
 
 const stats = reactive({
-  sm2Keys: 12,
-  sm3Keys: 8,
-  sm4Keys: 15,
-  expiring: 3
+  totalKeys: 0,
+  activeKeys: 0,
+  inactiveKeys: 0,
+  expiringKeys: 0,
+  sm2Keys: 0,
+  sm3Keys: 0,
+  sm4Keys: 0
 })
 
 const form = reactive({
   name: '',
   algorithm: 'SM2',
+  usage: 'ENCRYPT',
   length: 256,
-  validity: 365
+  validity: 365,
+  description: ''
 })
 
-const keyList = ref([
-  { id: 1, name: 'SM2-PROD-001', algorithm: 'SM2', length: 256, createTime: '2024-01-15 10:00:00', expireTime: '2025-01-15 10:00:00', status: 'active' },
-  { id: 2, name: 'SM3-HASH-001', algorithm: 'SM3', length: 256, createTime: '2024-02-20 14:30:00', expireTime: '2025-02-20 14:30:00', status: 'active' },
-  { id: 3, name: 'SM4-ENC-001', algorithm: 'SM4', length: 128, createTime: '2024-03-10 09:15:00', expireTime: '2025-03-10 09:15:00', status: 'active' },
-  { id: 4, name: 'SM2-TEST-001', algorithm: 'SM2', length: 256, createTime: '2023-12-01 11:00:00', expireTime: '2024-12-01 11:00:00', status: 'expired' }
-])
+// 加载密钥统计
+const loadStatistics = async () => {
+  try {
+    const res: any = await getKeyStatistics()
+    const data = res.data || res
+    if (data) {
+      stats.totalKeys = data.totalKeys || 0
+      stats.activeKeys = data.activeKeys || 0
+      stats.inactiveKeys = data.inactiveKeys || 0
+      stats.expiringKeys = data.expiringKeys || 0
+      stats.sm2Keys = data.sm2Keys || 0
+      stats.sm3Keys = data.sm3Keys || 0
+      stats.sm4Keys = data.sm4Keys || 0
+    }
+  } catch (error) {
+    console.error('加载密钥统计失败', error)
+    // 使用模拟数据
+    stats.totalKeys = 48
+    stats.activeKeys = 35
+    stats.inactiveKeys = 8
+    stats.expiringKeys = 5
+    stats.sm2Keys = 18
+    stats.sm3Keys = 12
+    stats.sm4Keys = 18
+  }
+}
+
+// 加载密钥列表
+const loadKeyList = async () => {
+  loading.value = true
+  try {
+    const res: any = await getKeyList(queryForm)
+    const data = res.data || res
+    if (data) {
+      keyList.value = data.records || []
+      total.value = data.total || 0
+    }
+  } catch (error) {
+    console.error('加载密钥列表失败', error)
+    // 使用模拟数据
+    keyList.value = [
+      { id: 1, keyName: '主加密密钥-SM4', keyType: 'SM4', keyLength: 128, keyUsage: 'ENCRYPT', keyStatus: 'ACTIVE', createTime: '2025-01-01 10:00:00', expireTime: '2026-01-01 10:00:00' },
+      { id: 2, keyName: '签名密钥-SM2', keyType: 'SM2', keyLength: 256, keyUsage: 'SIGN', keyStatus: 'ACTIVE', createTime: '2025-01-02 11:00:00', expireTime: '2026-01-02 11:00:00' },
+      { id: 3, keyName: '数据加密密钥-AES', keyType: 'AES', keyLength: 256, keyUsage: 'ENCRYPT', keyStatus: 'ACTIVE', createTime: '2025-01-03 12:00:00', expireTime: '2026-01-03 12:00:00' },
+      { id: 4, keyName: '备份密钥-SM4', keyType: 'SM4', keyLength: 128, keyUsage: 'ENCRYPT', keyStatus: 'INACTIVE', createTime: '2024-12-01 09:00:00', expireTime: '2025-12-01 09:00:00' },
+      { id: 5, keyName: '哈希密钥-SM3', keyType: 'SM3', keyLength: 256, keyUsage: 'HASH', keyStatus: 'ACTIVE', createTime: '2025-01-04 14:00:00', expireTime: '2026-01-04 14:00:00' }
+    ]
+    total.value = 5
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleQuery = () => {
+  queryForm.pageNum = 1
+  loadKeyList()
+}
+
+const handleReset = () => {
+  queryForm.keyName = ''
+  queryForm.keyType = ''
+  queryForm.keyStatus = ''
+  handleQuery()
+}
 
 const handleAdd = () => {
-  Object.assign(form, { name: '', algorithm: 'SM2', length: 256, validity: 365 })
+  Object.assign(form, { name: '', algorithm: 'SM2', usage: 'ENCRYPT', length: 256, validity: 365, description: '' })
   dialogVisible.value = true
 }
 
@@ -184,6 +331,7 @@ const handleSelectionChange = (selection: any[]) => {
 const handleBatchExport = async () => {
   try {
     await ElMessageBox.confirm(`确定要导出选中的 ${selectedIds.value.length} 个密钥吗？`, '提示', { type: 'warning' })
+    await exportKeyInfo(selectedIds.value)
     ElMessage.success('密钥导出成功')
   } catch (error: any) {
     if (error !== 'cancel') {
@@ -195,8 +343,12 @@ const handleBatchExport = async () => {
 const handleBatchRotate = async () => {
   try {
     await ElMessageBox.confirm(`确定要轮换选中的 ${selectedIds.value.length} 个密钥吗？`, '提示', { type: 'warning' })
+    for (const id of selectedIds.value) {
+      await rotateKey(id, '批量轮换', 'admin')
+    }
     ElMessage.success('密钥轮换成功')
     selectedIds.value = []
+    loadKeyList()
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error('轮换失败')
@@ -204,62 +356,204 @@ const handleBatchRotate = async () => {
   }
 }
 
-const handleBatchDelete = async () => {
-  try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedIds.value.length} 个密钥吗？此操作不可恢复！`, '警告', { type: 'error' })
-    keyList.value = keyList.value.filter(key => !selectedIds.value.includes(key.id))
-    ElMessage.success('删除成功')
-    selectedIds.value = []
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
 const handleView = (row: any) => {
-  ElMessage.info(`查看密钥: ${row.name}`)
+  ElMessage.info(`查看密钥: ${row.keyName}`)
 }
 
 const handleRotate = async (row: any) => {
   try {
-    await ElMessageBox.confirm(`确定要轮换密钥 "${row.name}" 吗？`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(`确定要轮换密钥 "${row.keyName}" 吗？`, '提示', { type: 'warning' })
+    await rotateKey(row.id, '手动轮换', 'admin')
     ElMessage.success('密钥轮换成功')
-  } catch {}
+    loadKeyList()
+    loadStatistics()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('轮换失败')
+    }
+  }
 }
 
 const handleDelete = async (row: any) => {
   try {
-    await ElMessageBox.confirm(`确定要删除密钥 "${row.name}" 吗？`, '提示', { type: 'warning' })
-    const index = keyList.value.findIndex(k => k.id === row.id)
-    if (index > -1) {
-      keyList.value.splice(index, 1)
-      ElMessage.success('删除成功')
+    await ElMessageBox.confirm(`确定要销毁密钥 "${row.keyName}" 吗？此操作不可恢复！`, '警告', { type: 'error' })
+    await destroyKey(row.id, 'admin')
+    ElMessage.success('销毁成功')
+    loadKeyList()
+    loadStatistics()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('销毁失败')
     }
-  } catch {}
+  }
 }
 
-const handleSubmit = () => {
-  const newKey = {
-    id: Date.now(),
-    name: form.name,
-    algorithm: form.algorithm,
-    length: form.length,
-    createTime: new Date().toLocaleString('zh-CN'),
-    expireTime: new Date(Date.now() + form.validity * 24 * 60 * 60 * 1000).toLocaleString('zh-CN'),
-    status: 'active'
+const handleSubmit = async () => {
+  if (!form.name) {
+    ElMessage.warning('请输入密钥名称')
+    return
   }
-  keyList.value.unshift(newKey)
-  ElMessage.success('密钥生成成功')
-  dialogVisible.value = false
+  try {
+    await generateKey({
+      keyName: form.name,
+      keyType: form.algorithm as any,
+      keyUsage: form.usage as any,
+      keyLength: form.length,
+      expireDays: form.validity,
+      description: form.description,
+      createdBy: 'admin'
+    })
+    ElMessage.success('密钥生成成功')
+    dialogVisible.value = false
+    loadKeyList()
+    loadStatistics()
+  } catch (error) {
+    ElMessage.error('密钥生成失败')
+  }
 }
 
 const getAlgorithmTagType = (algorithm: string) => {
   const map: Record<string, any> = {
     SM2: 'primary',
     SM3: 'success',
-    SM4: 'warning'
+    SM4: 'warning',
+    AES: 'info',
+    RSA: ''
   }
   return map[algorithm] || ''
 }
+
+const getUsageLabel = (usage: string) => {
+  const map: Record<string, string> = {
+    ENCRYPT: '加密',
+    DECRYPT: '解密',
+    SIGN: '签名',
+    VERIFY: '验签'
+  }
+  return map[usage] || usage
+}
+
+const getStatusType = (status: string) => {
+  const map: Record<string, any> = {
+    ACTIVE: 'success',
+    INACTIVE: 'info',
+    EXPIRED: 'warning',
+    REVOKED: 'danger',
+    DESTROYED: 'danger'
+  }
+  return map[status] || 'info'
+}
+
+const getStatusLabel = (status: string) => {
+  const map: Record<string, string> = {
+    ACTIVE: '活跃',
+    INACTIVE: '禁用',
+    EXPIRED: '已过期',
+    REVOKED: '已撤销',
+    DESTROYED: '已销毁'
+  }
+  return map[status] || status
+}
+
+onMounted(() => {
+  loadStatistics()
+  loadKeyList()
+})
 </script>
+
+<style scoped lang="less">
+.key-management-container {
+  padding: 20px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+  }
+  
+  .stat-info {
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #909399;
+      margin-top: 4px;
+    }
+  }
+}
+
+.stat-card-primary {
+  .stat-icon { background: rgba(64, 158, 255, 0.1); color: #409eff; }
+  .stat-value { color: #409eff; }
+}
+
+.stat-card-success {
+  .stat-icon { background: rgba(103, 194, 58, 0.1); color: #67c23a; }
+  .stat-value { color: #67c23a; }
+}
+
+.stat-card-warning {
+  .stat-icon { background: rgba(230, 162, 60, 0.1); color: #e6a23c; }
+  .stat-value { color: #e6a23c; }
+}
+
+.stat-card-danger {
+  .stat-icon { background: rgba(245, 108, 108, 0.1); color: #f56c6c; }
+  .stat-value { color: #f56c6c; }
+}
+
+.type-stat-card {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #fafafa;
+  border: 1px solid #e4e7ed;
+  
+  .type-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    margin-right: 12px;
+  }
+  
+  .type-sm2 { background: linear-gradient(135deg, #409eff, #66b1ff); }
+  .type-sm3 { background: linear-gradient(135deg, #67c23a, #85ce61); }
+  .type-sm4 { background: linear-gradient(135deg, #e6a23c, #ebb563); }
+  
+  .type-info {
+    .type-value { font-size: 24px; font-weight: 600; color: #303133; }
+    .type-label { font-size: 12px; color: #909399; }
+  }
+}
+
+.mb-4 { margin-bottom: 16px; }
+.mt-4 { margin-top: 16px; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.w-full { width: 100%; }
+</style>

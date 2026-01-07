@@ -61,9 +61,38 @@ public class Result<T> implements Serializable {
     }
     
     /**
+     * 成功响应（OK别名）
+     */
+    public static <T> Result<T> OK() {
+        return success();
+    }
+    
+    /**
+     * 成功响应（OK别名，带数据）
+     */
+    public static <T> Result<T> OK(T data) {
+        return success(data);
+    }
+    
+    /**
+     * 成功响应（OK别名，带消息和数据）
+     */
+    public static <T> Result<T> OK(String message, T data) {
+        return success(message, data);
+    }
+    
+    /**
      * 成功响应（带消息和数据）
      */
     public static <T> Result<T> success(String message, T data) {
+        return new Result<>(200, message, data);
+    }
+    
+    /**
+     * 成功响应（带数据和消息，参数顺序相反）
+     * 注意：当数据类型为String时，请使用success(String message, T data)方法
+     */
+    public static <T> Result<T> successData(T data, String message) {
         return new Result<>(200, message, data);
     }
     
@@ -86,6 +115,41 @@ public class Result<T> implements Serializable {
      */
     public static <T> Result<T> error(Integer code, String message) {
         return new Result<>(code, message, null);
+    }
+    
+    /**
+     * 失败响应（使用ResultCode）
+     */
+    public static <T> Result<T> error(ResultCode resultCode) {
+        return new Result<>(resultCode.getCode(), resultCode.getMessage(), null);
+    }
+    
+    /**
+     * 失败响应（使用ResultCode和自定义消息）
+     */
+    public static <T> Result<T> error(ResultCode resultCode, String message) {
+        return new Result<>(resultCode.getCode(), message, null);
+    }
+    
+    /**
+     * 失败响应（failed别名）
+     */
+    public static <T> Result<T> failed() {
+        return error();
+    }
+    
+    /**
+     * 失败响应（failed别名，带消息）
+     */
+    public static <T> Result<T> failed(String message) {
+        return error(message);
+    }
+    
+    /**
+     * 失败响应（failed别名，带错误码和消息）
+     */
+    public static <T> Result<T> failed(Integer code, String message) {
+        return error(code, message);
     }
     
     /**

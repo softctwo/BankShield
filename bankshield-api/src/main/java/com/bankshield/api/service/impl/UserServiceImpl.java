@@ -285,7 +285,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             resultData.put("message", "登录成功");
 
             // 返回成功结果
-            return Result.<Map<String, Object>>success(resultData, "登录成功");
+            return Result.success("登录成功", resultData);
         } catch (Exception e) {
             log.error("用户登录失败: {}", e.getMessage());
             return Result.error("登录失败");

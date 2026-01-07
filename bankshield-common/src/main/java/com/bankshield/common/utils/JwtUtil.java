@@ -9,11 +9,13 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * JWT工具类
  */
+@org.springframework.stereotype.Component
 public class JwtUtil {
     
     /**
@@ -50,6 +52,17 @@ public class JwtUtil {
             claims = new HashMap<>();
         }
         claims.put("username", username);
+        return createToken(claims, username);
+    }
+    
+    /**
+     * 生成Token（带用户ID、用户名和权限列表）
+     */
+    public String generateToken(Long userId, String username, List<String> authorities) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("username", username);
+        claims.put("authorities", authorities);
         return createToken(claims, username);
     }
     

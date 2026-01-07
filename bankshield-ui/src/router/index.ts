@@ -29,6 +29,7 @@ import accessControlRouter from './modules/access-control'
 import securityScanRouter from './modules/security-scan'
 import complianceRouter from './modules/compliance'
 import securityRouter from './modules/security'
+import federatedRouter from './modules/federated'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -169,7 +170,9 @@ const routes: RouteRecordRaw[] = [
   // 合规管理路由
   complianceRouter,
   // 安全防护路由
-  ...securityRouter
+  ...securityRouter,
+  // 联邦学习路由
+  federatedRouter
 ]
 
 const router = createRouter({

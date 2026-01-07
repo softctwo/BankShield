@@ -74,9 +74,9 @@ const aiRouter: RouteRecordRaw = {
     {
       path: '/ai/prediction',
       name: 'Prediction',
-      component: () => import('@/views/ai/Prediction.vue'),
+      component: () => import('@/views/ai/prediction/index.vue'),
       meta: {
-        title: '预测性分析',
+        title: '威胁预测',
         icon: 'TrendCharts'
       }
     },

@@ -19,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
  */
 @Slf4j
 @Configuration
-@ConditionalOnProperty(name = "vault.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "vault.enabled", havingValue = "true", matchIfMissing = false)
 public class VaultAutoConfiguration {
     
     @Autowired

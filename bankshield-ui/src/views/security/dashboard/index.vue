@@ -553,10 +553,12 @@ let dataInterval: any = null
 onMounted(async () => {
   // 加载中国地图
   try {
-    const chinaMap = await import('@/assets/china.json')
-    echarts.registerMap('china', chinaMap.default)
+    const chinaMap: any = await import('@/assets/china.json')
+    echarts.registerMap('china', chinaMap.default || chinaMap)
   } catch (error) {
-    console.error('加载地图失败:', error)
+    console.warn('加载地图失败，使用简化版:', error)
+    // 注册一个空地图避免报错
+    echarts.registerMap('china', { type: 'FeatureCollection', features: [] } as any)
   }
 
   updateTime()
@@ -568,10 +570,14 @@ onMounted(async () => {
   initTopAttackIPs()
 
   setTimeout(() => {
-    initAttackTypeChart()
-    initEventTrendChart()
-    initMapChart()
-    initScoreGauge()
+    try {
+      initAttackTypeChart()
+      initEventTrendChart()
+      initMapChart()
+      initScoreGauge()
+    } catch (err) {
+      console.error('初始化图表失败:', err)
+    }
   }, 100)
 
   window.addEventListener('resize', handleResize)

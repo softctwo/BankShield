@@ -1,5 +1,7 @@
 package com.bankshield.common.exception;
 
+import com.bankshield.common.result.ResultCode;
+
 /**
  * 业务异常类
  */
@@ -43,6 +45,24 @@ public class BusinessException extends RuntimeException {
         super(message, cause);
         this.code = code;
         this.message = message;
+    }
+    
+    public BusinessException(ResultCode resultCode) {
+        super(resultCode.getMessage());
+        this.code = resultCode.getCode();
+        this.message = resultCode.getMessage();
+    }
+    
+    public BusinessException(ResultCode resultCode, String message) {
+        super(message);
+        this.code = resultCode.getCode();
+        this.message = message;
+    }
+    
+    public BusinessException(ResultCode resultCode, Throwable cause) {
+        super(resultCode.getMessage(), cause);
+        this.code = resultCode.getCode();
+        this.message = resultCode.getMessage();
     }
     
     public Integer getCode() {

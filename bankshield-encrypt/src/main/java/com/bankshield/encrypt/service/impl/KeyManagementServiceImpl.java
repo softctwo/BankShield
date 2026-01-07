@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 /**
  * 密钥管理服务实现类
@@ -336,6 +337,19 @@ public class KeyManagementServiceImpl implements KeyManagementService {
             // 即将过期的密钥数量（30天内）
             LocalDateTime expireTime = LocalDateTime.now().plusDays(30);
             statistics.put("expiringKeys", encryptionKeyMapper.countExpiringKeys(expireTime));
+            
+            // 按类型统计密钥数量
+            LambdaQueryWrapper<EncryptionKey> sm2Wrapper = new LambdaQueryWrapper<>();
+            sm2Wrapper.eq(EncryptionKey::getKeyType, "SM2").eq(EncryptionKey::getDeleted, 0);
+            statistics.put("sm2Keys", encryptionKeyMapper.selectCount(sm2Wrapper));
+            
+            LambdaQueryWrapper<EncryptionKey> sm3Wrapper = new LambdaQueryWrapper<>();
+            sm3Wrapper.eq(EncryptionKey::getKeyType, "SM3").eq(EncryptionKey::getDeleted, 0);
+            statistics.put("sm3Keys", encryptionKeyMapper.selectCount(sm3Wrapper));
+            
+            LambdaQueryWrapper<EncryptionKey> sm4Wrapper = new LambdaQueryWrapper<>();
+            sm4Wrapper.eq(EncryptionKey::getKeyType, "SM4").eq(EncryptionKey::getDeleted, 0);
+            statistics.put("sm4Keys", encryptionKeyMapper.selectCount(sm4Wrapper));
             
             return Result.success(statistics);
             

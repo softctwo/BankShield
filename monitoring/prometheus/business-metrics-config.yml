@@ -1,0 +1,68 @@
+# BankShield 业务指标配置
+# 用于Prometheus采集自定义业务指标
+
+# 数据分类指标
+- job_name: 'data-classification-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 30s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_classification_.*'
+      action: keep
+
+# 数据脱敏指标
+- job_name: 'data-masking-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 30s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_masking_.*'
+      action: keep
+
+# 审计日志指标
+- job_name: 'audit-log-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 30s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_audit_.*'
+      action: keep
+
+# 告警触发指标
+- job_name: 'alert-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 15s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_alert_.*'
+      action: keep
+
+# 合规检查指标
+- job_name: 'compliance-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 60s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_compliance_.*'
+      action: keep
+
+# 数据资产指标
+- job_name: 'data-asset-metrics'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: ['api:8080']
+  scrape_interval: 60s
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: 'bankshield_asset_.*'
+      action: keep

@@ -2,7 +2,7 @@ package com.bankshield.encrypt.service.impl;
 
 import com.bankshield.common.crypto.SM2Util;
 import com.bankshield.common.crypto.SM4Util;
-import com.bankshield.common.utils.EncryptUtil;
+import com.bankshield.common.crypto.EncryptUtil;
 import com.bankshield.encrypt.enums.KeyType;
 import com.bankshield.encrypt.enums.KeyUsage;
 import com.bankshield.encrypt.service.KeyGenerationService;
@@ -108,9 +108,9 @@ public class KeyGenerationServiceImpl implements KeyGenerationService {
             log.warn("SM2密钥长度必须为256位，忽略指定长度：{}", keyLength);
         }
 
-        java.security.KeyPair keyPair = SM2Util.generateKeyPair();
-        String publicKey = SM2Util.publicKeyToString(keyPair.getPublic());
-        String privateKey = SM2Util.privateKeyToString(keyPair.getPrivate());
+        SM2Util.SM2KeyPair sm2KeyPair = SM2Util.generateKeyPair();
+        String publicKey = sm2KeyPair.getPublicKey();
+        String privateKey = sm2KeyPair.getPrivateKey();
 
         return new KeyPair(publicKey, privateKey);
     }

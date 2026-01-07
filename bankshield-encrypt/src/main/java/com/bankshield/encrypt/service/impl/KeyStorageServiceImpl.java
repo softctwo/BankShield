@@ -97,7 +97,7 @@ public class KeyStorageServiceImpl implements KeyStorageService {
                 case "SM4":
                     // 使用CBC模式，每次加密生成随机IV，确保相同明文产生不同密文
                     String iv = SM4Util.generateIV();
-                    String encrypted = SM4Util.encryptCBC(actualMasterKey, iv, keyMaterial);
+                    String encrypted = SM4Util.encryptCBC(keyMaterial, actualMasterKey, iv);
                     // 将IV与密文用冒号分隔存储，解密时需要先解析IV
                     return iv + ":" + encrypted;
                 default:
@@ -125,7 +125,7 @@ public class KeyStorageServiceImpl implements KeyStorageService {
                     }
                     String iv = parts[0];
                     String cipherText = parts[1];
-                    return SM4Util.decryptCBC(actualMasterKey, iv, cipherText);
+                    return SM4Util.decryptCBC(cipherText, actualMasterKey, iv);
                 default:
                     throw new IllegalArgumentException("不支持的存储类型: " + storageType);
             }

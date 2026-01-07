@@ -32,6 +32,26 @@ const encryptRouter: RouteRecordRaw = {
         icon: 'DataAnalysis',
         roles: ['SECURITY_ADMIN']
       }
+    },
+    {
+      path: 'strategy',
+      component: () => import('@/views/encrypt/strategy/index.vue'),
+      name: 'EncryptStrategy',
+      meta: {
+        title: '加密策略',
+        icon: 'Setting',
+        roles: ['SECURITY_ADMIN']
+      }
+    },
+    {
+      path: 'task',
+      component: () => import('@/views/encrypt/task/index.vue'),
+      name: 'EncryptTask',
+      meta: {
+        title: '加密任务',
+        icon: 'List',
+        roles: ['SECURITY_ADMIN']
+      }
     }
   ]
 }

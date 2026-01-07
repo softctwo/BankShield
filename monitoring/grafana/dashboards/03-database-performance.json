@@ -1,0 +1,94 @@
+{
+  "dashboard": {
+    "title": "BankShield - 数据库性能监控",
+    "tags": ["bankshield", "database", "mysql"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "数据库连接数",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{job=\"bankshield-api\"}",
+            "legendFormat": "活跃连接"
+          },
+          {
+            "expr": "hikaricp_connections_idle{job=\"bankshield-api\"}",
+            "legendFormat": "空闲连接"
+          },
+          {
+            "expr": "hikaricp_connections_max{job=\"bankshield-api\"}",
+            "legendFormat": "最大连接"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "数据库查询速率",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(hikaricp_connections_usage_seconds_count{job=\"bankshield-api\"}[5m])",
+            "legendFormat": "查询/秒"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "数据库查询时间 (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(hikaricp_connections_usage_seconds_bucket{job=\"bankshield-api\"}[5m]))",
+            "legendFormat": "P95查询时间"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "查询时间"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "连接等待时间",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "hikaricp_connections_acquire_seconds_sum{job=\"bankshield-api\"} / hikaricp_connections_acquire_seconds_count{job=\"bankshield-api\"}",
+            "legendFormat": "平均等待时间"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "等待时间"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "慢SQL统计 (>100ms)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, hikaricp_connections_usage_seconds_sum{job=\"bankshield-api\"} / hikaricp_connections_usage_seconds_count{job=\"bankshield-api\"} > 0.1)",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

@@ -4,6 +4,8 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -28,6 +30,33 @@ public class EncryptUtil {
             return Base64.getEncoder().encodeToString(secretKey.getEncoded());
         } catch (Exception e) {
             throw new RuntimeException("生成AES密钥失败", e);
+        }
+    }
+    
+    /**
+     * 生成AES密钥（指定长度）
+     */
+    public static String generateAesKey(int keyLength) {
+        try {
+            KeyGenerator keyGenerator = KeyGenerator.getInstance(AES_ALGORITHM);
+            keyGenerator.init(keyLength, new SecureRandom());
+            SecretKey secretKey = keyGenerator.generateKey();
+            return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        } catch (Exception e) {
+            throw new RuntimeException("生成AES密钥失败", e);
+        }
+    }
+    
+    /**
+     * 生成RSA密钥对
+     */
+    public static KeyPair generateRsaKeyPair(int keyLength) {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(keyLength, new SecureRandom());
+            return keyPairGenerator.generateKeyPair();
+        } catch (Exception e) {
+            throw new RuntimeException("生成RSA密钥对失败", e);
         }
     }
     
@@ -90,6 +119,21 @@ public class EncryptUtil {
             return bytesToHex(hashBytes);
         } catch (Exception e) {
             throw new RuntimeException("SHA256哈希失败", e);
+        }
+    }
+    
+    /**
+     * SM3哈希（简化实现，使用SHA256代替）
+     */
+    public static String sm3Hash(String data) {
+        try {
+            // 简化实现：使用SHA256代替SM3
+            // 生产环境应使用Bouncy Castle的SM3实现
+            MessageDigest md = MessageDigest.getInstance(SHA256_ALGORITHM);
+            byte[] hashBytes = md.digest(data.getBytes("UTF-8"));
+            return bytesToHex(hashBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("SM3哈希失败", e);
         }
     }
     

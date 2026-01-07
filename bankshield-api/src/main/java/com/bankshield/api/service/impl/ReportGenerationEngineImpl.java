@@ -16,6 +16,7 @@ import com.itextpdf.text.PageSize;
 import com.itextpdf.text.pdf.PdfWriter;
 // import com.itextpdf.tool.xml.XMLWorkerHelper;  // 需要额外依赖 itextpdf-tool 包
 import freemarker.template.*;
+import freemarker.cache.StringTemplateLoader;
 import freemarker.core.*;
 import freemarker.core.Configurable;
 import lombok.extern.slf4j.Slf4j;

@@ -21,6 +21,11 @@ public enum ResultCode {
     PARAM_ERROR(400, "参数错误"),
     
     /**
+     * 参数错误（别名）
+     */
+    PARAMETER_ERROR(400, "参数错误"),
+    
+    /**
      * 未授权
      */
     UNAUTHORIZED(401, "未授权，请先登录"),
@@ -63,7 +68,72 @@ public enum ResultCode {
     /**
      * 系统异常
      */
-    SYSTEM_ERROR(800, "系统异常");
+    SYSTEM_ERROR(800, "系统异常"),
+    
+    /**
+     * 角色检查错误
+     */
+    ROLE_CHECK_ERROR(900, "角色检查错误"),
+    
+    /**
+     * 角色互斥冲突
+     */
+    ROLE_MUTEX_CONFLICT(901, "角色互斥冲突"),
+    
+    /**
+     * 角色违规记录错误
+     */
+    ROLE_VIOLATION_RECORD_ERROR(902, "角色违规记录错误"),
+    
+    /**
+     * 角色互斥查询错误
+     */
+    ROLE_MUTEX_QUERY_ERROR(903, "角色互斥查询错误"),
+    
+    /**
+     * 角色违规记录未找到
+     */
+    ROLE_VIOLATION_NOT_FOUND(904, "角色违规记录未找到"),
+    
+    /**
+     * 角色违规处理错误
+     */
+    ROLE_VIOLATION_HANDLE_ERROR(905, "角色违规处理错误"),
+    
+    /**
+     * 角色违规查询错误
+     */
+    ROLE_VIOLATION_QUERY_ERROR(906, "角色违规查询错误"),
+    
+    /**
+     * 用户未找到
+     */
+    USER_NOT_FOUND(1001, "用户未找到"),
+    
+    /**
+     * 角色未找到
+     */
+    ROLE_NOT_FOUND(1002, "角色未找到"),
+    
+    /**
+     * 权限未找到
+     */
+    PERMISSION_NOT_FOUND(1003, "权限未找到"),
+    
+    /**
+     * 密钥未找到
+     */
+    KEY_NOT_FOUND(1004, "密钥未找到"),
+    
+    /**
+     * 加密失败
+     */
+    ENCRYPT_ERROR(1005, "加密失败"),
+    
+    /**
+     * 解密失败
+     */
+    DECRYPT_ERROR(1006, "解密失败");
     
     private final Integer code;
     private final String message;

@@ -120,6 +120,59 @@ public class DataMaskUtil {
     }
     
     /**
+     * 根据类型脱敏
+     * @param data 数据
+     * @param type 类型：phone/idcard/name/email/bankcard/address
+     */
+    public static String maskByType(String data, String type) {
+        if (data == null || type == null) {
+            return data;
+        }
+        switch (type.toLowerCase()) {
+            case "phone":
+                return maskPhone(data);
+            case "idcard":
+                return maskIdCard(data);
+            case "name":
+                return maskName(data);
+            case "email":
+                return maskEmail(data);
+            case "bankcard":
+                return maskBankCard(data);
+            case "address":
+                return maskAddress(data);
+            default:
+                return maskAll(data);
+        }
+    }
+    
+    /**
+     * 自定义脱敏（带替换字符和最大长度）
+     * @param data 数据
+     * @param prefixLen 保留前缀长度
+     * @param suffixLen 保留后缀长度
+     * @param maskChar 脱敏字符
+     * @param maxMaskLen 最大脱敏长度（0表示不限制）
+     */
+    public static String maskCustom(String data, int prefixLen, int suffixLen, char maskChar, int maxMaskLen) {
+        if (data == null || data.length() <= prefixLen + suffixLen) {
+            return data;
+        }
+        int length = data.length();
+        int maskLen = length - prefixLen - suffixLen;
+        if (maxMaskLen > 0 && maskLen > maxMaskLen) {
+            maskLen = maxMaskLen;
+        }
+        StringBuilder masked = new StringBuilder();
+        masked.append(data.substring(0, prefixLen));
+        for (int i = 0; i < maskLen; i++) {
+            masked.append(maskChar);
+        }
+        masked.append(data.substring(length - suffixLen));
+        return masked.toString();
+    }
+    
+    /**
      * 检测是否包含敏感信息（手机号）
      */
     public static boolean containsPhone(String text) {

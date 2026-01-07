@@ -1,0 +1,167 @@
+{
+  "dashboard": {
+    "title": "BankShield - 告警统计分析",
+    "tags": ["bankshield", "alerts", "statistics"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "告警总览",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "今日告警总数",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(bankshield_alert_triggered_total[24h])",
+            "legendFormat": "告警总数"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1}
+      },
+      {
+        "id": 3,
+        "title": "高危告警",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(bankshield_alert_triggered_total{alert_level=\"HIGH\"}[24h])",
+            "legendFormat": "高危"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 5, "color": "yellow"},
+          {"value": 20, "color": "red"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "中危告警",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(bankshield_alert_triggered_total{alert_level=\"MEDIUM\"}[24h])",
+            "legendFormat": "中危"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 10, "color": "yellow"},
+          {"value": 50, "color": "orange"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "低危告警",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(bankshield_alert_triggered_total{alert_level=\"LOW\"}[24h])",
+            "legendFormat": "低危"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1}
+      },
+      {
+        "id": 6,
+        "title": "告警处理率",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(bankshield_alert_resolved_count / bankshield_alert_triggered_total) * 100",
+            "legendFormat": "处理率"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+        "thresholds": [
+          {"value": 0, "color": "red"},
+          {"value": 70, "color": "yellow"},
+          {"value": 90, "color": "green"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "平均响应时间",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_alert_response_time_avg_seconds",
+            "legendFormat": "响应时间"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 4, "x": 20, "y": 1},
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "时间"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "告警趋势分析",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5}
+      },
+      {
+        "id": 9,
+        "title": "24小时告警趋势",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bankshield_alert_triggered_total[1h])",
+            "legendFormat": "{{alert_level}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6}
+      },
+      {
+        "id": 10,
+        "title": "告警类型分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (alert_type) (bankshield_alert_triggered_total)",
+            "legendFormat": "{{alert_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6}
+      },
+      {
+        "id": 11,
+        "title": "Top 10 告警规则",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (rule_name) (bankshield_alert_triggered_total))",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14}
+      },
+      {
+        "id": 12,
+        "title": "告警处理时长分布",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(bankshield_alert_resolution_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  }
+}

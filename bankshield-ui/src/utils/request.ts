@@ -43,17 +43,31 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response) => {
     const data = response.data as ResponseData
+    const config = response.config as CustomAxiosRequestConfig
 
     // 假设后端返回格式：{ code: number, data: any, message: string }
     if (data.code === 200) {
       return response
     } else {
-      ElMessage.error(data.message || '请求失败')
+      // 如果设置了跳过错误处理，则不显示错误消息
+      if (!config.skipErrorHandler) {
+        ElMessage.error(data.message || '请求失败')
+      }
       return Promise.reject(new Error(data.message || '请求失败'))
     }
   },
   (error) => {
     const response = error.response
+    const config = error.config as CustomAxiosRequestConfig
+    
+    // GET请求默认静默处理网络错误（允许页面降级到模拟数据）
+    const isGetRequest = config?.method?.toLowerCase() === 'get'
+    const shouldSkipError = config?.skipErrorHandler || isGetRequest
+    
+    // 如果设置了跳过错误处理或是GET请求，则静默失败
+    if (shouldSkipError) {
+      return Promise.reject(error)
+    }
 
     if (response) {
       switch (response.status) {

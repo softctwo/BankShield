@@ -414,9 +414,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements Ro
             boolean canAssign = roleCheckService.checkRoleAssignment(userId, roleCode);
             
             if (canAssign) {
-                return Result.success(true, "角色分配合规");
+                return Result.success("角色分配合规", true);
             } else {
-                return Result.success(false, "角色分配违反三权分立原则");
+                return Result.success("角色分配违反三权分立原则", false);
             }
         } catch (Exception e) {
             log.error("检查角色分配失败", e);

@@ -28,6 +28,24 @@ const blockchainRouter: RouteRecordRaw = {
         title: '存证记录',
         icon: 'Document'
       }
+    },
+    {
+      path: 'evidence',
+      name: 'BlockchainEvidence',
+      component: () => import('@/views/blockchain/evidence/index.vue'),
+      meta: {
+        title: '存证管理',
+        icon: 'Tickets'
+      }
+    },
+    {
+      path: 'verify',
+      name: 'BlockchainVerify',
+      component: () => import('@/views/blockchain/verify/index.vue'),
+      meta: {
+        title: '存证验证',
+        icon: 'CircleCheck'
+      }
     }
   ]
 }

@@ -85,8 +85,9 @@ export function getAnchorRecords(params?: PageParams & { type?: string; status?:
   return request({
     url: '/api/blockchain/records',
     method: 'get',
-    params
-  })
+    params,
+    skipErrorHandler: true
+  } as any)
 }
 
 // 获取区块链网络状态

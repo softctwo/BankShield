@@ -195,4 +195,100 @@ public class BlockchainController {
             return Result.error("计算区块哈希失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 根据交易ID查询区块
+     */
+    @GetMapping("/transactions/{transactionId}")
+    @ApiOperation("根据交易ID查询区块")
+    public Result<Map<String, Object>> getBlockByTransaction(@PathVariable String transactionId) {
+        try {
+            Map<String, Object> result = blockchainService.getBlockByTransactionId(transactionId);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("查询交易失败", e);
+            return Result.error("查询交易失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 查询区块链浏览器数据
+     */
+    @GetMapping("/browser/overview")
+    @ApiOperation("获取区块链浏览器概览")
+    public Result<Map<String, Object>> getBrowserOverview() {
+        try {
+            Map<String, Object> overview = blockchainService.getBrowserOverview();
+            return Result.success(overview);
+        } catch (Exception e) {
+            log.error("获取浏览器概览失败", e);
+            return Result.error("获取浏览器概览失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 生成存证证书
+     */
+    @PostMapping("/certificate/generate")
+    @ApiOperation("生成存证证书")
+    public Result<Map<String, Object>> generateCertificate(
+            @RequestParam String blockId,
+            @RequestParam String transactionId,
+            @RequestParam String certificateType) {
+        try {
+            Map<String, Object> certificate = blockchainService.generateCertificate(
+                blockId, transactionId, certificateType);
+            return Result.success(certificate);
+        } catch (Exception e) {
+            log.error("生成存证证书失败", e);
+            return Result.error("生成存证证书失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 验证存证证书
+     */
+    @PostMapping("/certificate/verify")
+    @ApiOperation("验证存证证书")
+    public Result<Map<String, Object>> verifyCertificate(@RequestParam String certificateCode) {
+        try {
+            Map<String, Object> result = blockchainService.verifyCertificate(certificateCode);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("验证存证证书失败", e);
+            return Result.error("验证存证证书失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取区块链健康状态
+     */
+    @GetMapping("/health")
+    @ApiOperation("获取区块链健康状态")
+    public Result<Map<String, Object>> getBlockchainHealth() {
+        try {
+            Map<String, Object> health = blockchainService.getBlockchainHealth();
+            return Result.success(health);
+        } catch (Exception e) {
+            log.error("获取区块链健康状态失败", e);
+            return Result.error("获取区块链健康状态失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 搜索区块链数据
+     */
+    @GetMapping("/search")
+    @ApiOperation("搜索区块链数据")
+    public Result<Map<String, Object>> searchBlockchain(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "ALL") String searchType) {
+        try {
+            Map<String, Object> result = blockchainService.searchBlockchain(keyword, searchType);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("搜索区块链数据失败", e);
+            return Result.error("搜索区块链数据失败: " + e.getMessage());
+        }
+    }
 }

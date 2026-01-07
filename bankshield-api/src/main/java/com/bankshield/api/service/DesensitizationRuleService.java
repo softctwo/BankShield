@@ -76,7 +76,18 @@ public interface DesensitizationRuleService {
     Page<DesensitizationRule> pageRules(int current, int size, String dataType, String status);
     
     /**
+     * 分页查询规则（带Page对象）
+     */
+    com.baomidou.mybatisplus.core.metadata.IPage<DesensitizationRule> pageRules(
+            Page<DesensitizationRule> page, String ruleName, String dataType, String status);
+    
+    /**
      * 测试规则
      */
     String testRule(Long id, String testValue);
+    
+    /**
+     * 更新规则状态
+     */
+    boolean updateRuleStatus(Long id, String status);
 }

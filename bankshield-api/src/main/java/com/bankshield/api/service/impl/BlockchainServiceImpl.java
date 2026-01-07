@@ -366,4 +366,84 @@ public class BlockchainServiceImpl implements BlockchainService {
         
         return detail;
     }
+    
+    @Override
+    public Map<String, Object> getBlockByTransactionId(String transactionId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", "功能开发中");
+        return result;
+    }
+    
+    @Override
+    public Map<String, Object> getBrowserOverview() {
+        Map<String, Object> overview = new HashMap<>();
+        overview.put("statistics", getBlockchainStatistics());
+        overview.put("recentBlocks", getBlockList(1, 10));
+        return overview;
+    }
+    
+    @Override
+    public Map<String, Object> generateCertificate(String blockId, String transactionId, String certificateType) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", "功能开发中");
+        return result;
+    }
+    
+    @Override
+    public Map<String, Object> verifyCertificate(String certificateCode) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", false);
+        result.put("message", "功能开发中");
+        return result;
+    }
+    
+    @Override
+    public Map<String, Object> getBlockchainHealth() {
+        Map<String, Object> health = new HashMap<>();
+        try {
+            Map<String, Object> stats = getBlockchainStatistics();
+            health.put("status", "healthy");
+            health.put("chainHeight", stats.get("chainHeight"));
+            health.put("totalBlocks", stats.get("totalBlocks"));
+            health.put("validBlocks", stats.get("validBlocks"));
+            health.put("invalidBlocks", stats.get("invalidBlocks"));
+        } catch (Exception e) {
+            health.put("status", "unhealthy");
+            health.put("error", e.getMessage());
+        }
+        return health;
+    }
+    
+    @Override
+    public Map<String, Object> searchBlockchain(String keyword, String searchType) {
+        Map<String, Object> result = new HashMap<>();
+        List<AuditLogBlock> blocks = new ArrayList<>();
+        
+        try {
+            LambdaQueryWrapper<AuditLogBlock> wrapper = new LambdaQueryWrapper<>();
+            
+            if ("hash".equals(searchType)) {
+                wrapper.eq(AuditLogBlock::getBlockHash, keyword);
+            } else if ("index".equals(searchType)) {
+                wrapper.eq(AuditLogBlock::getBlockIndex, Long.parseLong(keyword));
+            } else {
+                wrapper.like(AuditLogBlock::getBlockHash, keyword)
+                       .or()
+                       .like(AuditLogBlock::getMerkleRoot, keyword);
+            }
+            
+            blocks = blockMapper.selectList(wrapper);
+            result.put("success", true);
+            result.put("data", blocks);
+            result.put("total", blocks.size());
+        } catch (Exception e) {
+            log.error("搜索区块链数据失败", e);
+            result.put("success", false);
+            result.put("message", "搜索失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
 }

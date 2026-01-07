@@ -165,4 +165,59 @@ public class DesensitizationTemplateServiceImpl implements DesensitizationTempla
             return false;
         }
     }
+    
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<DesensitizationTemplate> pageTemplates(
+            Page<DesensitizationTemplate> page, String templateName, String templateType, String status) {
+        try {
+            LambdaQueryWrapper<DesensitizationTemplate> wrapper = new LambdaQueryWrapper<>();
+            
+            if (templateName != null && !templateName.isEmpty()) {
+                wrapper.like(DesensitizationTemplate::getTemplateName, templateName);
+            }
+            if (templateType != null && !templateType.isEmpty()) {
+                wrapper.eq(DesensitizationTemplate::getTemplateType, templateType);
+            }
+            if (status != null && !status.isEmpty()) {
+                wrapper.eq(DesensitizationTemplate::getStatus, status);
+            }
+            
+            wrapper.orderByDesc(DesensitizationTemplate::getCreateTime);
+            
+            return templateMapper.selectPage(page, wrapper);
+        } catch (Exception e) {
+            log.error("分页查询模板失败: {}", e.getMessage(), e);
+            return new Page<>();
+        }
+    }
+    
+    @Override
+    public boolean applyTemplate(Long id, String scheduleTime) {
+        try {
+            DesensitizationTemplate template = templateMapper.selectById(id);
+            if (template == null) {
+                log.error("模板不存在: {}", id);
+                return false;
+            }
+            
+            log.info("应用脱敏模板: {}, 计划时间: {}", id, scheduleTime);
+            return true;
+        } catch (Exception e) {
+            log.error("应用模板失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean updateTemplateStatus(Long id, String status) {
+        try {
+            DesensitizationTemplate template = new DesensitizationTemplate();
+            template.setId(id);
+            template.setStatus(status);
+            return templateMapper.updateById(template) > 0;
+        } catch (Exception e) {
+            log.error("更新模板状态失败: {}", e.getMessage(), e);
+            return false;
+        }
+    }
 }

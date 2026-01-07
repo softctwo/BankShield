@@ -81,6 +81,16 @@ const classificationRouter: RouteRecordRaw = {
         icon: 'Hide',
         roles: ['admin', 'data-manager']
       }
+    },
+    {
+      path: 'sensitive-data',
+      name: 'SensitiveData',
+      component: () => import('@/views/classification/sensitive-data/index.vue'),
+      meta: {
+        title: '敏感数据',
+        icon: 'Warning',
+        roles: ['admin', 'data-manager']
+      }
     }
   ]
 }

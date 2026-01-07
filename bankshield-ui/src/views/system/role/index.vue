@@ -244,33 +244,182 @@ const selectedIds = computed(() => {
 
 const permissionTree = ref([
   {
+    id: 'dashboard',
+    name: '数据大屏',
+    children: [
+      { id: 'dashboard:view', name: '查看大屏' }
+    ]
+  },
+  {
     id: 'system',
     name: '系统管理',
     children: [
-      { id: 'user:view', name: '用户查看' },
-      { id: 'user:add', name: '用户新增' },
-      { id: 'user:edit', name: '用户编辑' },
-      { id: 'user:delete', name: '用户删除' },
-      { id: 'role:view', name: '角色查看' },
-      { id: 'role:add', name: '角色新增' }
+      { id: 'system:user:view', name: '用户查看' },
+      { id: 'system:user:add', name: '用户新增' },
+      { id: 'system:user:edit', name: '用户编辑' },
+      { id: 'system:user:delete', name: '用户删除' },
+      { id: 'system:role:view', name: '角色查看' },
+      { id: 'system:role:add', name: '角色新增' },
+      { id: 'system:role:edit', name: '角色编辑' },
+      { id: 'system:role:delete', name: '角色删除' },
+      { id: 'system:dept:view', name: '部门查看' },
+      { id: 'system:dept:add', name: '部门新增' },
+      { id: 'system:menu:view', name: '菜单查看' },
+      { id: 'system:menu:add', name: '菜单新增' }
+    ]
+  },
+  {
+    id: 'classification',
+    name: '数据分类',
+    children: [
+      { id: 'classification:sensitive:view', name: '敏感数据查看' },
+      { id: 'classification:rule:view', name: '分类规则查看' },
+      { id: 'classification:rule:add', name: '分类规则新增' },
+      { id: 'classification:datasource:view', name: '数据源查看' },
+      { id: 'classification:datasource:add', name: '数据源新增' },
+      { id: 'classification:asset:view', name: '资产地图查看' }
+    ]
+  },
+  {
+    id: 'encrypt',
+    name: '数据加密',
+    children: [
+      { id: 'encrypt:key:view', name: '密钥查看' },
+      { id: 'encrypt:key:generate', name: '密钥生成' },
+      { id: 'encrypt:key:rotate', name: '密钥轮换' },
+      { id: 'encrypt:key:destroy', name: '密钥销毁' },
+      { id: 'encrypt:strategy:view', name: '加密策略查看' },
+      { id: 'encrypt:strategy:add', name: '加密策略新增' },
+      { id: 'encrypt:task:view', name: '加密任务查看' },
+      { id: 'encrypt:task:execute', name: '加密任务执行' }
+    ]
+  },
+  {
+    id: 'desensitization',
+    name: '数据脱敏',
+    children: [
+      { id: 'desensitization:rule:view', name: '脱敏规则查看' },
+      { id: 'desensitization:rule:add', name: '脱敏规则新增' },
+      { id: 'desensitization:template:view', name: '脱敏模板查看' },
+      { id: 'desensitization:template:add', name: '脱敏模板新增' },
+      { id: 'desensitization:log:view', name: '脱敏日志查看' }
+    ]
+  },
+  {
+    id: 'access-control',
+    name: '访问控制',
+    children: [
+      { id: 'access:policy:view', name: '策略查看' },
+      { id: 'access:policy:add', name: '策略新增' },
+      { id: 'access:ip:view', name: 'IP白名单查看' },
+      { id: 'access:ip:add', name: 'IP白名单新增' },
+      { id: 'access:mfa:view', name: 'MFA配置查看' },
+      { id: 'access:mfa:config', name: 'MFA配置管理' }
     ]
   },
   {
     id: 'audit',
-    name: '审计管理',
+    name: '审计追踪',
     children: [
-      { id: 'audit:view', name: '审计查看' },
-      { id: 'log:view', name: '日志查看' },
-      { id: 'report:view', name: '报表查看' }
+      { id: 'audit:dashboard:view', name: '审计概览查看' },
+      { id: 'audit:operation:view', name: '操作审计查看' },
+      { id: 'audit:operation:export', name: '操作审计导出' },
+      { id: 'audit:login:view', name: '登录审计查看' },
+      { id: 'audit:security:view', name: '安全审计查看' }
     ]
   },
   {
-    id: 'data',
-    name: '数据管理',
+    id: 'monitor',
+    name: '监控告警',
     children: [
-      { id: 'data:view', name: '数据查看' },
-      { id: 'data:edit', name: '数据编辑' },
-      { id: 'data:export', name: '数据导出' }
+      { id: 'monitor:dashboard:view', name: '监控大屏查看' },
+      { id: 'monitor:alert:view', name: '告警规则查看' },
+      { id: 'monitor:alert:add', name: '告警规则新增' },
+      { id: 'monitor:alert:edit', name: '告警规则编辑' },
+      { id: 'monitor:record:view', name: '告警记录查看' }
+    ]
+  },
+  {
+    id: 'compliance',
+    name: '合规管理',
+    children: [
+      { id: 'compliance:dashboard:view', name: '合规概览查看' },
+      { id: 'compliance:rule:view', name: '合规规则查看' },
+      { id: 'compliance:rule:add', name: '合规规则新增' },
+      { id: 'compliance:check:view', name: '合规检查查看' },
+      { id: 'compliance:check:execute', name: '合规检查执行' },
+      { id: 'compliance:report:view', name: '合规报告查看' },
+      { id: 'compliance:report:export', name: '合规报告导出' }
+    ]
+  },
+  {
+    id: 'lineage',
+    name: '数据血缘',
+    children: [
+      { id: 'lineage:graph:view', name: '血缘图谱查看' },
+      { id: 'lineage:discovery:execute', name: '血缘发现执行' },
+      { id: 'lineage:map:view', name: '数据地图查看' },
+      { id: 'lineage:map:generate', name: '数据地图生成' }
+    ]
+  },
+  {
+    id: 'blockchain',
+    name: '区块链存证',
+    children: [
+      { id: 'blockchain:dashboard:view', name: '存证概览查看' },
+      { id: 'blockchain:record:view', name: '存证记录查看' },
+      { id: 'blockchain:record:add', name: '存证记录新增' },
+      { id: 'blockchain:verify:execute', name: '存证验证执行' }
+    ]
+  },
+  {
+    id: 'ai',
+    name: 'AI智能',
+    children: [
+      { id: 'ai:dashboard:view', name: 'AI概览查看' },
+      { id: 'ai:model:view', name: '模型查看' },
+      { id: 'ai:model:add', name: '模型新增' },
+      { id: 'ai:model:train', name: '模型训练' },
+      { id: 'ai:model:deploy', name: '模型部署' },
+      { id: 'ai:behavior:view', name: '行为分析查看' },
+      { id: 'ai:anomaly:view', name: '异常检测查看' }
+    ]
+  },
+  {
+    id: 'mpc',
+    name: 'MPC计算',
+    children: [
+      { id: 'mpc:dashboard:view', name: 'MPC概览查看' },
+      { id: 'mpc:job:view', name: '任务查看' },
+      { id: 'mpc:job:create', name: '任务创建' },
+      { id: 'mpc:job:execute', name: '任务执行' },
+      { id: 'mpc:party:view', name: '参与方查看' },
+      { id: 'mpc:party:register', name: '参与方注册' }
+    ]
+  },
+  {
+    id: 'federated',
+    name: '联邦学习',
+    children: [
+      { id: 'federated:dashboard:view', name: '联邦概览查看' },
+      { id: 'federated:job:view', name: '任务查看' },
+      { id: 'federated:job:create', name: '任务创建' },
+      { id: 'federated:job:start', name: '任务启动' },
+      { id: 'federated:party:view', name: '参与方查看' },
+      { id: 'federated:party:register', name: '参与方注册' }
+    ]
+  },
+  {
+    id: 'security',
+    name: '安全防护',
+    children: [
+      { id: 'security:scan:view', name: '安全扫描查看' },
+      { id: 'security:scan:create', name: '安全扫描创建' },
+      { id: 'security:scan:execute', name: '安全扫描执行' },
+      { id: 'security:result:view', name: '扫描结果查看' },
+      { id: 'security:watermark:view', name: '水印模板查看' },
+      { id: 'security:watermark:add', name: '水印模板新增' },
+      { id: 'security:watermark:extract', name: '水印提取' }
     ]
   }
 ])

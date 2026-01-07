@@ -1,8 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+const Layout = () => import('@/views/layout/index.vue')
+
 const accessControlRouter: RouteRecordRaw = {
   path: '/access-control',
   name: 'AccessControl',
+  component: Layout,
   redirect: '/access-control/policy',
   meta: {
     title: '访问控制',
@@ -37,6 +40,16 @@ const accessControlRouter: RouteRecordRaw = {
         title: 'IP访问控制',
         icon: 'Monitor',
         permission: 'access:ip:query'
+      }
+    },
+    {
+      path: 'audit',
+      name: 'AccessAudit',
+      component: () => import('@/views/access-control/audit/index.vue'),
+      meta: {
+        title: '访问审计',
+        icon: 'Document',
+        permission: 'access:audit:query'
       }
     }
   ]

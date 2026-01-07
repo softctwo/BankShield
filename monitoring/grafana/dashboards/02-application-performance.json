@@ -1,0 +1,90 @@
+{
+  "dashboard": {
+    "title": "BankShield - 应用性能监控",
+    "tags": ["bankshield", "performance", "api"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API请求速率 (QPS)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{job=\"bankshield-api\"}[5m])",
+            "legendFormat": "{{uri}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "API响应时间 (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"bankshield-api\"}[5m]))",
+            "legendFormat": "{{uri}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "响应时间"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "API错误率",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{job=\"bankshield-api\",status=~\"5..\"}[5m]) / rate(http_server_requests_seconds_count{job=\"bankshield-api\"}[5m]) * 100",
+            "legendFormat": "错误率"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "错误率"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "并发连接数",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "tomcat_threads_busy_threads{job=\"bankshield-api\"}",
+            "legendFormat": "活跃线程"
+          },
+          {
+            "expr": "tomcat_threads_config_max_threads{job=\"bankshield-api\"}",
+            "legendFormat": "最大线程"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "慢查询统计 (>200ms)",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, http_server_requests_seconds_sum{job=\"bankshield-api\"} / http_server_requests_seconds_count{job=\"bankshield-api\"} > 0.2)",
+            "format": "table"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

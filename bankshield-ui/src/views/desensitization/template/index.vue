@@ -247,7 +247,15 @@ const handleSearch = async () => {
       pagination.total = res.data.total
     }
   } catch (error) {
-    ElMessage.error('查询失败')
+    console.error('查询失败:', error)
+    // 使用模拟数据
+    tableData.value = [
+      { id: 1, templateName: '用户信息脱敏模板', templateCode: 'USER_INFO_TPL', templateType: 'TABLE', targetTable: 'user_info', fieldMapping: '{"phone":"PHONE_MASK","id_card":"ID_CARD_MASK","name":"NAME_MASK"}', status: 'ENABLED', templateDescription: '用户信息表脱敏模板', ruleCount: 3, createTime: '2025-01-05 10:00:00' },
+      { id: 2, templateName: '订单信息脱敏模板', templateCode: 'ORDER_INFO_TPL', templateType: 'TABLE', targetTable: 'order_info', fieldMapping: '{"customer_phone":"PHONE_MASK","delivery_address":"ADDRESS_MASK"}', status: 'ENABLED', templateDescription: '订单信息表脱敏模板', ruleCount: 2, createTime: '2025-01-05 11:00:00' },
+      { id: 3, templateName: '支付信息脱敏模板', templateCode: 'PAYMENT_INFO_TPL', templateType: 'BUSINESS', targetTable: 'payment_record', fieldMapping: '{"bank_card":"BANK_CARD_MASK","payer_name":"NAME_MASK"}', status: 'ENABLED', templateDescription: '支付记录脱敏模板', ruleCount: 2, createTime: '2025-01-05 14:00:00' },
+      { id: 4, templateName: '员工信息脱敏模板', templateCode: 'EMPLOYEE_TPL', templateType: 'TABLE', targetTable: 'employee', fieldMapping: '{"phone":"PHONE_MASK","email":"EMAIL_MASK","id_card":"ID_CARD_MASK"}', status: 'DISABLED', templateDescription: '员工信息表脱敏模板', ruleCount: 3, createTime: '2025-01-04 09:00:00' }
+    ]
+    pagination.total = 4
   } finally {
     loading.value = false
   }

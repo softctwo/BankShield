@@ -1,0 +1,108 @@
+{
+  "dashboard": {
+    "title": "BankShield - 数据资产监控",
+    "tags": ["bankshield", "data-assets", "classification"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "数据资产总览",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_asset_total_count",
+            "legendFormat": "总资产数"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "敏感数据资产",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_asset_sensitive_count",
+            "legendFormat": "敏感资产"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 100, "color": "yellow"},
+          {"value": 500, "color": "red"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "未分类资产",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "bankshield_asset_unclassified_count",
+            "legendFormat": "未分类"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 10, "color": "yellow"},
+          {"value": 50, "color": "red"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "今日新增资产",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "increase(bankshield_asset_total_count[24h])",
+            "legendFormat": "新增资产"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "资产分级分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (classification_level) (bankshield_asset_by_level_count)",
+            "legendFormat": "{{classification_level}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+      },
+      {
+        "id": 6,
+        "title": "资产类型分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (asset_type) (bankshield_asset_by_type_count)",
+            "legendFormat": "{{asset_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+      },
+      {
+        "id": 7,
+        "title": "分类操作趋势",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(bankshield_classification_operations_total[5m])",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12}
+      }
+    ],
+    "refresh": "1m",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    }
+  }
+}

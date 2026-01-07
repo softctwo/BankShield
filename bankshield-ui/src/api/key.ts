@@ -106,8 +106,9 @@ export function getKeyList(params: KeyQueryParams) {
   return request({
     url: '/api/key/page',
     method: 'get',
-    params
-  })
+    params,
+    skipErrorHandler: true
+  } as any)
 }
 
 /**
@@ -214,8 +215,9 @@ export function getKeyUsageStatistics(id: number, startTime: string, endTime: st
 export function getKeyStatistics() {
   return request({
     url: '/api/key/statistics',
-    method: 'get'
-  })
+    method: 'get',
+    skipErrorHandler: true
+  } as any)
 }
 
 /**

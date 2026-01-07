@@ -66,7 +66,23 @@ public interface DesensitizationTemplateService {
     Page<DesensitizationTemplate> pageTemplates(int current, int size, String templateType, String status);
     
     /**
+     * 分页查询模板（带Page对象）
+     */
+    com.baomidou.mybatisplus.core.metadata.IPage<DesensitizationTemplate> pageTemplates(
+            Page<DesensitizationTemplate> page, String templateName, String templateType, String status);
+    
+    /**
      * 应用模板进行脱敏
      */
     boolean applyTemplate(String templateCode, String userId, String userName);
+    
+    /**
+     * 应用模板进行脱敏（指定ID）
+     */
+    boolean applyTemplate(Long id, String scheduleTime);
+    
+    /**
+     * 更新模板状态
+     */
+    boolean updateTemplateStatus(Long id, String status);
 }

@@ -77,4 +77,47 @@ public interface BlockchainService {
      * @return 区块详情
      */
     Map<String, Object> getBlockDetail(Long blockId);
+    
+    /**
+     * 根据交易ID查询区块
+     * @param transactionId 交易ID
+     * @return 区块信息
+     */
+    Map<String, Object> getBlockByTransactionId(String transactionId);
+    
+    /**
+     * 获取区块链浏览器概览
+     * @return 浏览器概览数据
+     */
+    Map<String, Object> getBrowserOverview();
+    
+    /**
+     * 生成存证证书
+     * @param blockId 区块ID
+     * @param transactionId 交易ID
+     * @param certificateType 证书类型
+     * @return 证书信息
+     */
+    Map<String, Object> generateCertificate(String blockId, String transactionId, String certificateType);
+    
+    /**
+     * 验证存证证书
+     * @param certificateCode 证书编码
+     * @return 验证结果
+     */
+    Map<String, Object> verifyCertificate(String certificateCode);
+    
+    /**
+     * 获取区块链健康状态
+     * @return 健康状态
+     */
+    Map<String, Object> getBlockchainHealth();
+    
+    /**
+     * 搜索区块链数据
+     * @param keyword 关键词
+     * @param searchType 搜索类型
+     * @return 搜索结果
+     */
+    Map<String, Object> searchBlockchain(String keyword, String searchType);
 }

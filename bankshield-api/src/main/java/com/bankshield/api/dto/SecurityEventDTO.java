@@ -21,4 +21,29 @@ public class SecurityEventDTO {
     private String status;
     
     private String level;
+    
+    /**
+     * 事件类型（别名）
+     */
+    private String eventType;
+    
+    /**
+     * 事件级别（别名）
+     */
+    private String eventLevel;
+    
+    /**
+     * 事件来源（别名）
+     */
+    private String eventSource;
+    
+    /**
+     * 事件消息
+     */
+    private String eventMessage;
+    
+    /**
+     * 事件时间
+     */
+    private String eventTime;
 }

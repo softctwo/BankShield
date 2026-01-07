@@ -55,7 +55,7 @@ public class DataLineageEnhancedController {
             // 启动异步任务
             CompletableFuture<DataLineageAutoDiscovery> future = lineageDiscoveryService.startDiscoveryTask(task.getId());
             
-            return Result.success(task, "血缘发现任务创建成功");
+            return Result.success("血缘发现任务创建成功", task);
         } catch (Exception e) {
             log.error("创建血缘发现任务失败", e);
             return Result.failed("创建血缘发现任务失败: " + e.getMessage());
@@ -86,7 +86,7 @@ public class DataLineageEnhancedController {
         
         try {
             boolean result = lineageDiscoveryService.cancelTask(taskId);
-            return Result.success(result, result ? "任务取消成功" : "任务取消失败");
+            return Result.success(result ? "任务取消成功" : "任务取消失败", result);
         } catch (Exception e) {
             log.error("取消任务失败: {}", taskId, e);
             return Result.failed("取消任务失败: " + e.getMessage());
@@ -120,6 +120,50 @@ public class DataLineageEnhancedController {
         }
     }
 
+    @DeleteMapping("/discovery/task/{taskId}")
+    @ApiOperation("删除血缘发现任务")
+    public Result<Boolean> deleteDiscoveryTask(
+            @ApiParam("任务ID") @PathVariable Long taskId) {
+        
+        try {
+            DataLineageAutoDiscovery task = lineageDiscoveryService.getTaskStatus(taskId);
+            if (task == null) {
+                return Result.failed("任务不存在");
+            }
+            if ("RUNNING".equals(task.getStatus())) {
+                return Result.failed("运行中的任务不能删除");
+            }
+            boolean result = lineageDiscoveryService.deleteTask(taskId);
+            return Result.success(result ? "任务删除成功" : "任务删除失败", result);
+        } catch (Exception e) {
+            log.error("删除任务失败: {}", taskId, e);
+            return Result.failed("删除任务失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/discovery/task/{taskId}/retry")
+    @ApiOperation("重新执行血缘发现任务")
+    public Result<DataLineageAutoDiscovery> retryDiscoveryTask(
+            @ApiParam("任务ID") @PathVariable Long taskId) {
+        
+        try {
+            DataLineageAutoDiscovery task = lineageDiscoveryService.getTaskStatus(taskId);
+            if (task == null) {
+                return Result.failed("任务不存在");
+            }
+            if ("RUNNING".equals(task.getStatus())) {
+                return Result.failed("任务正在运行中");
+            }
+            
+            // 重置任务状态并重新执行
+            DataLineageAutoDiscovery newTask = lineageDiscoveryService.retryTask(taskId);
+            return Result.success("任务已重新启动", newTask);
+        } catch (Exception e) {
+            log.error("重试任务失败: {}", taskId, e);
+            return Result.failed("重试任务失败: " + e.getMessage());
+        }
+    }
+
     // ==================== 影响分析相关接口 ====================
 
     @PostMapping("/impact-analysis")
@@ -139,7 +183,7 @@ public class DataLineageEnhancedController {
             // 启动异步分析
             CompletableFuture<DataImpactAnalysis> future = impactAnalysisService.performImpactAnalysis(analysis.getId());
             
-            return Result.success(analysis, "影响分析任务创建成功");
+            return Result.success("影响分析任务创建成功", analysis);
         } catch (Exception e) {
             log.error("创建影响分析任务失败", e);
             return Result.failed("创建影响分析任务失败: " + e.getMessage());
@@ -198,7 +242,7 @@ public class DataLineageEnhancedController {
         
         try {
             DataMap dataMap = dataMapService.generateGlobalDataMap();
-            return Result.success(dataMap, "全局数据地图生成成功");
+            return Result.success("全局数据地图生成成功", dataMap);
         } catch (Exception e) {
             log.error("生成全局数据地图失败", e);
             return Result.failed("生成全局数据地图失败: " + e.getMessage());
@@ -212,7 +256,7 @@ public class DataLineageEnhancedController {
         
         try {
             DataMap dataMap = dataMapService.generateBusinessDomainMap(businessDomain);
-            return Result.success(dataMap, "业务域数据地图生成成功");
+            return Result.success("业务域数据地图生成成功", dataMap);
         } catch (Exception e) {
             log.error("生成业务域数据地图失败: {}", businessDomain, e);
             return Result.failed("生成业务域数据地图失败: " + e.getMessage());
@@ -226,7 +270,7 @@ public class DataLineageEnhancedController {
         
         try {
             DataMap dataMap = dataMapService.generateDataSourceMap(dataSourceId);
-            return Result.success(dataMap, "数据源数据地图生成成功");
+            return Result.success("数据源数据地图生成成功", dataMap);
         } catch (Exception e) {
             log.error("生成数据源数据地图失败: {}", dataSourceId, e);
             return Result.failed("生成数据源数据地图失败: " + e.getMessage());
@@ -243,7 +287,7 @@ public class DataLineageEnhancedController {
         
         try {
             DataMap dataMap = dataMapService.generateCustomDataMap(mapName, includedTables, includedDataSources, layoutConfig);
-            return Result.success(dataMap, "自定义数据地图生成成功");
+            return Result.success("自定义数据地图生成成功", dataMap);
         } catch (Exception e) {
             log.error("生成自定义数据地图失败: {}", mapName, e);
             return Result.failed("生成自定义数据地图失败: " + e.getMessage());
@@ -303,7 +347,7 @@ public class DataLineageEnhancedController {
         
         try {
             boolean result = dataMapService.setDefaultDataMap(mapId);
-            return Result.success(result, result ? "设置默认数据地图成功" : "设置默认数据地图失败");
+            return Result.success(result ? "设置默认数据地图成功" : "设置默认数据地图失败", result);
         } catch (Exception e) {
             log.error("设置默认数据地图失败: {}", mapId, e);
             return Result.failed("设置默认数据地图失败: " + e.getMessage());
@@ -319,7 +363,7 @@ public class DataLineageEnhancedController {
         
         try {
             boolean result = dataMapService.updateDataMap(mapId, mapName, config);
-            return Result.success(result, result ? "更新数据地图成功" : "更新数据地图失败");
+            return Result.success(result ? "更新数据地图成功" : "更新数据地图失败", result);
         } catch (Exception e) {
             log.error("更新数据地图失败: {}", mapId, e);
             return Result.failed("更新数据地图失败: " + e.getMessage());
@@ -333,7 +377,7 @@ public class DataLineageEnhancedController {
         
         try {
             boolean result = dataMapService.deleteDataMap(mapId);
-            return Result.success(result, result ? "删除数据地图成功" : "删除数据地图失败");
+            return Result.success(result ? "删除数据地图成功" : "删除数据地图失败", result);
         } catch (Exception e) {
             log.error("删除数据地图失败: {}", mapId, e);
             return Result.failed("删除数据地图失败: " + e.getMessage());
@@ -364,7 +408,7 @@ public class DataLineageEnhancedController {
         
         try {
             Map<String, Object> graphData = visualizationService.generateLineageGraph(tableName, columnName, depth);
-            return Result.success(graphData, "血缘关系图生成成功");
+            return Result.success("血缘关系图生成成功", graphData);
         } catch (Exception e) {
             log.error("生成血缘关系图失败: {}.{}", tableName, columnName, e);
             return Result.failed("生成血缘关系图失败: " + e.getMessage());
@@ -379,7 +423,7 @@ public class DataLineageEnhancedController {
         
         try {
             Map<String, Object> graphData = visualizationService.generateImpactAnalysisGraph(tableName, columnName);
-            return Result.success(graphData, "影响分析图生成成功");
+            return Result.success("影响分析图生成成功", graphData);
         } catch (Exception e) {
             log.error("生成影响分析图失败: {}.{}", tableName, columnName, e);
             return Result.failed("生成影响分析图失败: " + e.getMessage());
@@ -393,7 +437,7 @@ public class DataLineageEnhancedController {
         
         try {
             Map<String, Object> graphData = visualizationService.generate3DDataMap(mapId);
-            return Result.success(graphData, "3D数据地图生成成功");
+            return Result.success("3D数据地图生成成功", graphData);
         } catch (Exception e) {
             log.error("生成3D数据地图失败: {}", mapId, e);
             return Result.failed("生成3D数据地图失败: " + e.getMessage());
@@ -411,7 +455,7 @@ public class DataLineageEnhancedController {
         try {
             Map<String, Object> graphData = visualizationService.generateTraceabilityGraph(
                 sourceTable, sourceColumn, targetTable, targetColumn);
-            return Result.success(graphData, "溯源路径图生成成功");
+            return Result.success("溯源路径图生成成功", graphData);
         } catch (Exception e) {
             log.error("生成溯源路径图失败: {}.{} -> {}.{}", sourceTable, sourceColumn, targetTable, targetColumn, e);
             return Result.failed("生成溯源路径图失败: " + e.getMessage());
@@ -427,7 +471,7 @@ public class DataLineageEnhancedController {
         
         try {
             Map<String, Object> graphData = visualizationService.generateDataFlowGraph(tableName, startTime, endTime);
-            return Result.success(graphData, "数据流向图生成成功");
+            return Result.success("数据流向图生成成功", graphData);
         } catch (Exception e) {
             log.error("生成数据流向图失败: {}", tableName, e);
             return Result.failed("生成数据流向图失败: " + e.getMessage());
@@ -446,7 +490,7 @@ public class DataLineageEnhancedController {
             String relativeFilePath = visualizationService.exportVisualizationToHtml(chartType, chartData, title);
 
             // 返回相对路径，防止暴露服务器内部路径
-            return Result.success(relativeFilePath, "可视化图表导出成功");
+            return Result.success("可视化图表导出成功", relativeFilePath);
         } catch (Exception e) {
             log.error("导出可视化图表失败", e);
             return Result.failed("导出可视化图表失败: " + e.getMessage());

@@ -58,4 +58,14 @@ public class ComplianceReport {
     private String createBy;
     
     private String updateBy;
+    
+    /**
+     * 合规标准
+     */
+    private String complianceStandard;
+    
+    /**
+     * 警告规则列表
+     */
+    private String warningRules;
 }
